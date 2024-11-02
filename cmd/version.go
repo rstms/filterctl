@@ -22,20 +22,14 @@ THE SOFTWARE.
 package cmd
 
 import (
-    "os"
-    "fmt"
-    "log"
-    "bufio"
-    "regexp"
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
-var HEADER_PATTERN = regexp.MustCompile(`^([a-zA-Z _-]*): (.*)$`)
-var Headers map[string]string
-
-// parseCmd represents the parse command
-var parseCmd = &cobra.Command{
-	Use:   "parse",
+// versionCmd represents the version command
+var versionCmd = &cobra.Command{
+	Use:   "version",
 	Short: "A brief description of your command",
 	Long: `A longer description that spans multiple lines and likely contains examples
 and usage of using your command. For example:
@@ -44,52 +38,20 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-	    err := ParseFile(os.Stdin)
-	    cobra.CheckErr(err)
+		fmt.Printf("filterctl v%s\n", Version)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(parseCmd)
+	rootCmd.AddCommand(versionCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// parseCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// versionCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// parseCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-}
-
-func ParseFile(input *os.File) error {
-	    Headers = make(map[string]string)
-	    scanner := bufio.NewScanner(input)
-	    for scanner.Scan() {
-		err, done := parseLine(scanner.Text())
-		cobra.CheckErr(err)
-		if done {
-		    break;
-		}
-	    }
-	    log.Println("BEGIN")
-	    for header, value := range Headers {
-		log.Printf("[%s] %s\n", header, value)
-	    }
-	    log.Println("END")
-	    return nil
-}
-
-func parseLine(line string) (error, bool) {
-
-    matches := HEADER_PATTERN.FindStringSubmatch(line)
-    if len(matches) == 3 {
-	Headers[matches[1]] = matches[2]
-	if matches[1] == "Subject" {
-	    return nil, true
-	}
-	return nil, false
-    }
-    return fmt.Errorf("failed to parse: %s", line), true
+	// versionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
