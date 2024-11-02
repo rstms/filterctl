@@ -1,4 +1,8 @@
 Foo: foo header
+MultiLine: foo
+    moo
+    goo
+ loo
 Moo: moo header
 Subject: subject line
 body line 1

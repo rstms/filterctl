@@ -24,6 +24,7 @@ package cmd
 import (
     "os"
     "fmt"
+    "strings"
     "log"
     "bufio"
     "regexp"
@@ -32,6 +33,7 @@ import (
 
 var HEADER_PATTERN = regexp.MustCompile(`^([a-zA-Z _-]*): (.*)$`)
 var Headers map[string]string
+var LastHeader string
 
 // parseCmd represents the parse command
 var parseCmd = &cobra.Command{
@@ -82,11 +84,25 @@ func ParseFile(input *os.File) error {
 }
 
 func parseLine(line string) (error, bool) {
-
+    
+    isHeader, err := regexp.MatchString(`^[a-zA-Z]`, line)
+    if err != nil {
+	return err, true
+    }
+    fmt.Printf("isHeader=%v line=%s\n", isHeader, line)
+    if !isHeader {
+	if LastHeader != "" {
+	    Headers[LastHeader] = Headers[LastHeader] + " " + strings.TrimSpace(line)
+	}
+	return nil, false
+    }
     matches := HEADER_PATTERN.FindStringSubmatch(line)
     if len(matches) == 3 {
-	Headers[matches[1]] = matches[2]
-	if matches[1] == "Subject" {
+	name := matches[1]
+	value := matches[2]
+	LastHeader = name
+	Headers[name] = value
+	if name == "Subject" {
 	    return nil, true
 	}
 	return nil, false
