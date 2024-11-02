@@ -153,7 +153,7 @@ func InitIdentity() error {
 		if Verbose {
 			log.Printf("addr=%s hostname=%s host=%s domain=%s\n", addr, hostname, host, domain)
 		}
-		if host == hostname {
+		if Hostname == "" {
 			Hostname = host + "." + domain
 		}
 		Domains = append(Domains, domain)
