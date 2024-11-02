@@ -43,7 +43,7 @@ var DisableExec bool
 var DisableResponse bool
 var Verbose bool
 
-const Version = "0.1.2"
+const Version = "0.1.3"
 
 var Hostname string
 var Username string
