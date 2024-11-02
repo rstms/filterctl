@@ -23,6 +23,7 @@ package cmd
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -44,9 +45,9 @@ var Verbose bool
 
 const Version = "0.1.1"
 
-var Domains []string
 var Hostname string
 var Username string
+var Domains []string
 var Sender string
 
 // rootCmd represents the base command when called without any subcommands
@@ -149,10 +150,19 @@ func InitIdentity() error {
 		}
 		host := matches[1]
 		domain := matches[2]
+		if Verbose {
+			log.Printf("addr=%s hostname=%s host=%s domain=%s\n", addr, hostname, host, domain)
+		}
 		if host == hostname {
 			Hostname = host + "." + domain
 		}
 		Domains = append(Domains, domain)
+	}
+	if Hostname == "" {
+		return errors.New("failed to set Hostname")
+	}
+	if len(Domains) == 0 {
+		return errors.New("failed to set Domain")
 	}
 	currentUser, err := user.Current()
 	if err != nil {

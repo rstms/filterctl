@@ -95,6 +95,15 @@ func ParseFile(input *os.File) error {
 	err := checkHeaders(Headers)
 	cobra.CheckErr(err)
 
+	if Verbose {
+		log.Println("BEGIN-ID")
+		log.Printf("Hostname: %s\n", Hostname)
+		log.Printf("Username: %s\n", Username)
+		log.Printf("Domains: %v\n", Domains)
+		log.Printf("Sender: %s\n", Sender)
+		log.Println("END-ID")
+	}
+
 	return ExecuteCommand(Headers["Subject"])
 }
 
@@ -210,6 +219,8 @@ func checkSender() error {
 	if err != nil {
 		return fmt.Errorf("From: invalid user: %s", fromUser)
 	}
+
+	Username = fromUser
 
 	for _, domain := range Domains {
 		if domain == fromDomain {
