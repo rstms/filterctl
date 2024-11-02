@@ -32,7 +32,7 @@ import (
 
 var cfgFile string
 var logFile *os.File
-const Version = "0.0.6"
+const Version = "0.0.7"
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
