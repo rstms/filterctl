@@ -38,7 +38,8 @@ import (
 
 var cfgFile string
 var logFile *os.File
-var Debug bool
+var DisableExec bool
+var DisableResponse bool
 var Verbose bool
 
 const Version = "0.1.0"
@@ -92,7 +93,8 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.filterctl.yaml)")
-	rootCmd.PersistentFlags().BoolVarP(&Debug, "disable", "d", false, "disable sending output as mail message")
+	rootCmd.PersistentFlags().BoolVarP(&DisableExec, "disable-exec", "d", false, "disable command execution")
+	rootCmd.PersistentFlags().BoolVarP(&DisableResponse, "disable-response", "D", false, "disable sending output as mail message")
 	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "enable diagnostic output")
 }
 
@@ -163,6 +165,9 @@ func InitIdentity() error {
 func ExecuteCommand(cmdline string) error {
 	args := strings.Split(cmdline, " ")
 	fmt.Printf("sender=%s command=%s args=%s\n", Sender, os.Args[0], cmdline)
+	if DisableExec {
+		return nil
+	}
 	cmd := exec.Command(os.Args[0], args...)
 	result, err := run(cmd)
 	if err != nil {
@@ -173,7 +178,7 @@ func ExecuteCommand(cmdline string) error {
 		log.Println(string(result))
 		log.Println("END_RESULT")
 	}
-	if Debug {
+	if DisableResponse {
 		return nil
 	}
 	sendmail := exec.Command("sendmail", Sender)

@@ -28,6 +28,7 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"os"
+	"os/user"
 	"regexp"
 	"strings"
 )
@@ -202,14 +203,19 @@ func checkSender() error {
 	if len(matches) != 3 {
 		return errors.New("From: parse failed")
 	}
-	if matches[1] != Username {
-		return fmt.Errorf("From: user mismatch; expected %s, got %s", Username, matches[1])
+	fromUser := matches[1]
+	fromDomain := matches[2]
+
+	_, err := user.Lookup(fromUser)
+	if err != nil {
+		return fmt.Errorf("From: invalid user: %s", fromUser)
 	}
+
 	for _, domain := range Domains {
-		if matches[2] == domain {
-			Sender = Username + "@" + domain
+		if domain == fromDomain {
+			Sender = fromUser + "@" + fromDomain
 			return nil
 		}
 	}
-	return fmt.Errorf("From: invalid domain: %s", matches[2])
+	return fmt.Errorf("From: invalid domain: %s", fromDomain)
 }

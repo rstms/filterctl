@@ -8,7 +8,8 @@ import (
 
 func TestParseFile(t *testing.T) {
 
-	Debug = true
+	DisableResponse = true
+	DisableExec = true
 	Verbose = true
 	err := InitIdentity()
 	require.Nil(t, err)
