@@ -41,7 +41,7 @@ var logFile *os.File
 var Debug bool
 var Verbose bool
 
-const Version = "0.0.10"
+const Version = "0.0.11"
 
 var Domains []string
 var Hostname string
