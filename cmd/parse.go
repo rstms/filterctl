@@ -22,18 +22,24 @@ THE SOFTWARE.
 package cmd
 
 import (
-    "os"
-    "fmt"
-    "strings"
-    "log"
-    "bufio"
-    "regexp"
+	"bufio"
+	"errors"
+	"fmt"
 	"github.com/spf13/cobra"
+	"log"
+	"os"
+	"regexp"
+	"strings"
 )
 
 var HEADER_PATTERN = regexp.MustCompile(`^([a-zA-Z _-]*): (.*)$`)
+var RECEIVED_PATTERN = regexp.MustCompile(`^from .* by ([a-z][a-z\.]*) \(OpenSMTPD\) with ESMTPSA .* auth=yes user=([a-z][a-z_-]*) for <filterctl@([a-z][a-z\.]*)>.*$`)
+var FROM_PATTERN = regexp.MustCompile(`^.* <([a-z][a-z_-]*)@([a-z][a-z\.]*)>$`)
+var DKIM_DOMAIN_PATTERN = regexp.MustCompile(`d=([a-z\.]*)$`)
+
 var Headers map[string]string
 var LastHeader string
+var ReceivedCount int
 
 // parseCmd represents the parse command
 var parseCmd = &cobra.Command{
@@ -46,8 +52,8 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-	    err := ParseFile(os.Stdin)
-	    cobra.CheckErr(err)
+		err := ParseFile(os.Stdin)
+		cobra.CheckErr(err)
 	},
 }
 
@@ -66,46 +72,144 @@ func init() {
 }
 
 func ParseFile(input *os.File) error {
-	    Headers = make(map[string]string)
-	    scanner := bufio.NewScanner(input)
-	    for scanner.Scan() {
+	Headers = make(map[string]string)
+	ReceivedCount = 0
+	scanner := bufio.NewScanner(input)
+	for scanner.Scan() {
 		err, done := parseLine(scanner.Text())
 		cobra.CheckErr(err)
 		if done {
-		    break;
+			break
 		}
-	    }
-	    log.Println("BEGIN")
-	    for header, value := range Headers {
-		log.Printf("[%s] %s\n", header, value)
-	    }
-	    log.Println("END")
-	    return nil
+	}
+
+	if Verbose {
+		log.Println("BEGIN-HEADERS")
+		for header, value := range Headers {
+			log.Printf("[%s] %s\n", header, value)
+		}
+		log.Println("END-HEADERS")
+	}
+
+	err := checkHeaders(Headers)
+	cobra.CheckErr(err)
+
+	return ExecuteCommand(Headers["Subject"])
 }
 
 func parseLine(line string) (error, bool) {
-    
-    isHeader, err := regexp.MatchString(`^[a-zA-Z]`, line)
-    if err != nil {
-	return err, true
-    }
-    fmt.Printf("isHeader=%v line=%s\n", isHeader, line)
-    if !isHeader {
-	if LastHeader != "" {
-	    Headers[LastHeader] = Headers[LastHeader] + " " + strings.TrimSpace(line)
+
+	isHeader, err := regexp.MatchString(`^[a-zA-Z]`, line)
+	if err != nil {
+		return err, true
 	}
-	return nil, false
-    }
-    matches := HEADER_PATTERN.FindStringSubmatch(line)
-    if len(matches) == 3 {
-	name := matches[1]
-	value := matches[2]
-	LastHeader = name
-	Headers[name] = value
-	if name == "Subject" {
-	    return nil, true
+	if !isHeader {
+		if LastHeader != "" {
+			Headers[LastHeader] = Headers[LastHeader] + " " + strings.TrimSpace(line)
+		}
+		return nil, false
 	}
-	return nil, false
-    }
-    return fmt.Errorf("failed to parse: %s", line), true
+	matches := HEADER_PATTERN.FindStringSubmatch(line)
+	if len(matches) == 3 {
+		name := matches[1]
+		value := matches[2]
+		LastHeader = name
+		Headers[name] = value
+		if name == "Received" {
+			ReceivedCount++
+		}
+		if name == "Subject" {
+			return nil, true
+		}
+		return nil, false
+	}
+	return fmt.Errorf("failed to parse: %s", line), true
+}
+
+func checkHeaders(headers map[string]string) error {
+	err := checkDKIM()
+	if err != nil {
+		return err
+	}
+	err = checkSender()
+	if err != nil {
+		return err
+	}
+	err = checkReceived()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkDKIM() error {
+
+	dkim, ok := Headers["DKIM-Signature"]
+	if !ok {
+		return errors.New("missing DKIM signature")
+	}
+	for _, field := range strings.Split(dkim, ";") {
+		field = strings.TrimSpace(field)
+		matches := DKIM_DOMAIN_PATTERN.FindStringSubmatch(field)
+		if len(matches) == 2 {
+			for _, domain := range Domains {
+				if matches[1] == domain {
+					return nil
+				}
+			}
+		}
+	}
+	return errors.New("domain not found in DKIM Signature")
+}
+
+func checkReceived() error {
+	if ReceivedCount != 1 {
+		return fmt.Errorf("Received: bad count; expected 1,  got %d", ReceivedCount)
+	}
+	received, ok := Headers["Received"]
+	if !ok {
+		return errors.New("Received: missing header")
+	}
+	matches := RECEIVED_PATTERN.FindStringSubmatch(received)
+	if len(matches) != 4 {
+		return errors.New("Received: parse failed")
+	}
+	rxHostname := matches[1]
+	rxUsername := matches[2]
+	rxDomain := matches[3]
+
+	if rxHostname != Hostname {
+		return fmt.Errorf("Received: hostname mismatch; expected %s, got %s", Hostname, rxHostname)
+	}
+
+	if rxUsername != Username {
+		return fmt.Errorf("Received: user mismatch; expected %s, got %s", Username, rxUsername)
+	}
+	for _, domain := range Domains {
+		if rxDomain == domain {
+			return nil
+		}
+	}
+	return fmt.Errorf("Received: invalid domain: %s", rxDomain)
+}
+
+func checkSender() error {
+	fromLine, ok := Headers["From"]
+	if !ok {
+		return errors.New("From: missing header")
+	}
+	matches := FROM_PATTERN.FindStringSubmatch(fromLine)
+	if len(matches) != 3 {
+		return errors.New("From: parse failed")
+	}
+	if matches[1] != Username {
+		return fmt.Errorf("From: user mismatch; expected %s, got %s", Username, matches[1])
+	}
+	for _, domain := range Domains {
+		if matches[2] == domain {
+			Sender = Username + "@" + domain
+			return nil
+		}
+	}
+	return fmt.Errorf("From: invalid domain: %s", matches[2])
 }
