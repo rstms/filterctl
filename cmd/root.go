@@ -42,7 +42,7 @@ var DisableExec bool
 var DisableResponse bool
 var Verbose bool
 
-const Version = "0.1.0"
+const Version = "0.1.1"
 
 var Domains []string
 var Hostname string
