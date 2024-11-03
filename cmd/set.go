@@ -23,55 +23,50 @@ package cmd
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
 
-// helpCmd represents the help command
-var helpCmd = &cobra.Command{
-	Use:   "help",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+// setCmd represents the set command
+var setCmd = &cobra.Command{
+	Use:   "set ADDRESS CLASS=THRESHOLD",
+	Short: "set a single class name and threshold",
+	Long: `
+Add or update a single class name and threshold value for an address.
+`,
+	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf(`
-Send mail to filterctl@%s with command in the subject line
+		address := args[0]
+		class := args[1]
+		matches := CLASS_PATTERN.FindStringSubmatch(class)
 
-  help		
-	list available commands
+		if len(matches) != 3 {
+			cobra.CheckErr(fmt.Errorf("failed to parse class specifier '%s'", class))
+		}
+		name := matches[1]
+		threshold := matches[2]
+		_, err := strconv.ParseFloat(threshold, 32)
+		if err != nil {
+			cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", class))
+		}
 
-  version
-	output filterctl version
-
-  class set NAME=THRESHOLD ...
-	add or change a single spam class
-
-  class list
-	return list of spam class thresholds
-
-  class reset NAME=THRESHOLD [NAME=THRESHOLD ...]
-	replace one or more spam class thresholds
-
-  class delete [NAME ...]
-	delete all spam classes, or named spam classes
-`, Domains[0])
+		response, err := api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", address, name, threshold))
+		cobra.CheckErr(err)
+		fmt.Println(response)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(helpCmd)
+	classCmd.AddCommand(setCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// helpCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// setCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// helpCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// setCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

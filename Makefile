@@ -13,3 +13,10 @@ install: build
 
 test:
 	go test -v ./cmd
+
+debug:
+	fix -- go test . ./... -v --run $(test)
+
+release: build test
+	bump && gh release create v$$(cat VERSION) --notes "$$(cat VERSION)"
+

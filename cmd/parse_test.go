@@ -5,12 +5,13 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"github.com/spf13/viper"
 )
 
 func TestInitIdentity(t *testing.T) {
-	DisableResponse = true
-	DisableExec = true
-	Verbose = true
+	viper.Set("disable_response", true)
+	viper.Set("disable_exec", true)
+	viper.Set("verbose", true)
 	require.Nil(t, InitIdentity())
 	data, err := os.ReadFile("testdata/fqdn")
 	require.Nil(t, err)

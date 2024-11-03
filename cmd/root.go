@@ -39,9 +39,6 @@ import (
 
 var cfgFile string
 var logFile *os.File
-var DisableExec bool
-var DisableResponse bool
-var Verbose bool
 
 const Version = "0.1.3"
 
@@ -93,10 +90,32 @@ func Execute() {
 
 func init() {
 	cobra.OnInitialize(initConfig)
+
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.filterctl.yaml)")
-	rootCmd.PersistentFlags().BoolVarP(&DisableExec, "disable-exec", "d", false, "disable command execution")
-	rootCmd.PersistentFlags().BoolVarP(&DisableResponse, "disable-response", "D", false, "disable sending output as mail message")
-	rootCmd.PersistentFlags().BoolVarP(&Verbose, "verbose", "v", false, "enable diagnostic output")
+
+	rootCmd.PersistentFlags().BoolP("disable-exec", "d", false, "disable command execution")
+	viper.BindPFlag("disable_exec", rootCmd.PersistentFlags().Lookup("disable-exec"))
+
+	rootCmd.PersistentFlags().BoolP("disable-response", "D", false, "disable sending output as mail message")
+	viper.BindPFlag("disable_response", rootCmd.PersistentFlags().Lookup("disable-response"))
+
+	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "enable diagnostic output")
+	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
+
+	rootCmd.PersistentFlags().String("cert", "/home/filterctl/ssl/filterctl.pem", "client certificate PEM file")
+	viper.BindPFlag("cert", rootCmd.PersistentFlags().Lookup("cert"))
+
+	rootCmd.PersistentFlags().String("key", "/home/filterctl/ssl/filterctl.key", "client certificate key file")
+	viper.BindPFlag("key", rootCmd.PersistentFlags().Lookup("key"))
+
+	rootCmd.PersistentFlags().String("ca", "/etc/ssl/keymaster.pem", "certificate authority file")
+	viper.BindPFlag("ca", rootCmd.PersistentFlags().Lookup("ca"))
+
+	rootCmd.PersistentFlags().String("address", "localhost", "server address")
+	viper.BindPFlag("address", rootCmd.PersistentFlags().Lookup("addr"))
+
+	rootCmd.PersistentFlags().Int("port", 4443, "server port")
+	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -115,11 +134,14 @@ func initConfig() {
 		viper.SetConfigName(".filterctl")
 	}
 
+	viper.SetEnvPrefix("filterctl")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		if viper.GetBool("verbose") {
+			fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
+		}
 	}
 }
 
@@ -150,7 +172,7 @@ func InitIdentity() error {
 		}
 		host := matches[1]
 		domain := matches[2]
-		if Verbose {
+		if viper.GetBool("verbose") {
 			log.Printf("addr=%s hostname=%s host=%s domain=%s\n", addr, hostname, host, domain)
 		}
 		if Hostname == "" {
@@ -173,26 +195,36 @@ func InitIdentity() error {
 }
 
 func ExecuteCommand(cmdline string) error {
-	args := strings.Split(cmdline, " ")
-	fmt.Printf("sender=%s command=%s args=%s\n", Sender, os.Args[0], cmdline)
-	if DisableExec {
+	if viper.GetBool("verbose") {
+		log.Printf("sender=%s command=%s args=%s\n", Sender, os.Args[0], cmdline)
+	}
+	if viper.GetBool("disable_exec") {
 		return nil
 	}
+
+	args := append([]string{Sender}, strings.Split(cmdline, " ")...)
 	cmd := exec.Command(os.Args[0], args...)
+
 	result, err := run(cmd)
 	if err != nil {
 		return err
 	}
-	if Verbose {
+	if viper.GetBool("verbose") {
 		log.Println("BEGIN_RESULT")
 		log.Println(string(result))
 		log.Println("END_RESULT")
 	}
-	if DisableResponse {
+	if viper.GetBool("disable_response") {
+		fmt.Println(result)
 		return nil
 	}
 	sendmail := exec.Command("sendmail", Sender)
-	sendmail.Stdin = bytes.NewBuffer(result)
+	buf := bytes.NewBuffer([]byte("Subject: filterctl response\n"))
+	_, err = buf.Write(result)
+	if err != nil {
+		return err
+	}
+	sendmail.Stdin = buf
 	_, err = run(sendmail)
 	return err
 }

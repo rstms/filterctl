@@ -26,6 +26,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"log"
 	"os"
 	"os/user"
@@ -84,7 +85,7 @@ func ParseFile(input *os.File) error {
 		}
 	}
 
-	if Verbose {
+	if viper.GetBool("verbose") {
 		log.Println("BEGIN-HEADERS")
 		for header, value := range Headers {
 			log.Printf("[%s] %s\n", header, value)
@@ -95,7 +96,7 @@ func ParseFile(input *os.File) error {
 	err := checkHeaders(Headers)
 	cobra.CheckErr(err)
 
-	if Verbose {
+	if viper.GetBool("verbose") {
 		log.Println("BEGIN-ID")
 		log.Printf("Hostname: %s\n", Hostname)
 		log.Printf("Username: %s\n", Username)

@@ -23,55 +23,60 @@ package cmd
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
 
-// helpCmd represents the help command
-var helpCmd = &cobra.Command{
-	Use:   "help",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+var CLASS_PATTERN = regexp.MustCompile(`^\s*([a-zA-Z][a-zA-Z0-9_-]*)=([0-9\.][0-9\.]*)\s*$`)
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+// resetCmd represents the reset command
+var resetCmd = &cobra.Command{
+	Use:   "reset ADDRESS NAME=THRESHOLD ...",
+	Short: "replace rspamd class thresholds",
+	Long: `
+Replace the set of rspamd class thresholds with a new set provided as
+arguments.  Each class name has a threshold value.  The threshold values set
+the upper limit for each class.  Any number of classes may be defined.
+`,
+	Args: cobra.MinimumNArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf(`
-Send mail to filterctl@%s with command in the subject line
+		address := args[0]
+		_, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s", address))
+		cobra.CheckErr(err)
 
-  help		
-	list available commands
-
-  version
-	output filterctl version
-
-  class set NAME=THRESHOLD ...
-	add or change a single spam class
-
-  class list
-	return list of spam class thresholds
-
-  class reset NAME=THRESHOLD [NAME=THRESHOLD ...]
-	replace one or more spam class thresholds
-
-  class delete [NAME ...]
-	delete all spam classes, or named spam classes
-`, Domains[0])
+		for i, arg := range args {
+			if i > 0 {
+				matches := CLASS_PATTERN.FindStringSubmatch(arg)
+				if len(matches) != 3 {
+					cobra.CheckErr(fmt.Errorf("failed to parse class specifier '%s'", arg))
+				}
+				name := matches[1]
+				threshold := matches[2]
+				_, err := strconv.ParseFloat(threshold, 32)
+				if err != nil {
+					cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", arg))
+				}
+				_, err = api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", address, name, threshold))
+				cobra.CheckErr(err)
+			}
+		}
+		response, err := api.Get(fmt.Sprintf("/filterctl/classes/%s", address))
+		fmt.Println(response)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(helpCmd)
+	classCmd.AddCommand(resetCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// helpCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// resetCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// helpCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// resetCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
