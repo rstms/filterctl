@@ -1,11 +1,11 @@
 package cmd
 
 import (
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"os"
 	"strings"
 	"testing"
-	"github.com/spf13/viper"
 )
 
 func TestInitIdentity(t *testing.T) {
