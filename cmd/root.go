@@ -219,20 +219,20 @@ func ExecuteCommand(cmdline string) error {
 		log.Println(string(result))
 		log.Println("END_RESULT")
 	}
-	sendmail := exec.Command("sendmail", Sender)
-	headers := fmt.Sprintf("To: %s\nFrom: filterctl daemon\nSubject: filterctl response\n", Sender)
-	buf := bytes.NewBuffer([]byte(headers))
-	_, err = buf.Write(result)
+
+	// generate RFC2822 email message
+	message, err := formatEmailMessage("filterctl response", Sender, "filterctl@"+Domains[0], result)
 	if err != nil {
 		return err
 	}
 
 	if viper.GetBool("disable_response") {
-		fmt.Println(buf.String())
+		fmt.Println(string(message))
 		return nil
 	}
 
-	sendmail.Stdin = buf
+	sendmail := exec.Command("sendmail", Sender)
+	sendmail.Stdin = bytes.NewBuffer(message)
 	_, err = run(sendmail)
 	return err
 }
