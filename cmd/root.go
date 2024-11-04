@@ -207,7 +207,7 @@ func ExecuteCommand(cmdline string) error {
 		return nil
 	}
 
-	args := append([]string{"--sender", Sender}, strings.Split(cmdline, " ")...)
+	args := append([]string{"--sender", Sender, "class"}, strings.Split(cmdline, " ")...)
 	cmd := exec.Command(os.Args[0], args...)
 
 	result, err := run(cmd)

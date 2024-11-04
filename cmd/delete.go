@@ -24,6 +24,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // deleteCmd represents the delete command
@@ -38,13 +39,13 @@ be provided to delete specific classes from the configuration.
 	Run: func(cmd *cobra.Command, args []string) {
 		var response string
 		if len(args) == 0 {
-			path := fmt.Sprintf("/filterctl/classes/%s", Sender)
+			path := fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender"))
 			r, err := api.Delete(path)
 			cobra.CheckErr(err)
 			response = r
 		} else {
 			for _, class := range args {
-				path := fmt.Sprintf("/filterctl/classes/%s/%s", Sender, class)
+				path := fmt.Sprintf("/filterctl/classes/%s/%s", viper.GetString("sender"), class)
 				r, err := api.Delete(path)
 				cobra.CheckErr(err)
 				response = r

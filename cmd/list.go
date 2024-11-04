@@ -25,6 +25,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // listCmd represents the list command
@@ -36,7 +37,7 @@ Return the complete set of rspamd class names and threshold values for the
 sender address.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		path := fmt.Sprintf("/filterctl/classes/%s", Sender)
+		path := fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender"))
 		response, err := api.Get(path)
 		cobra.CheckErr(err)
 		fmt.Println(response)

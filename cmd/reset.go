@@ -27,6 +27,7 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var CLASS_PATTERN = regexp.MustCompile(`^\s*([a-zA-Z][a-zA-Z0-9_-]*)=([0-9\.][0-9\.]*)\s*$`)
@@ -42,7 +43,7 @@ the upper limit for each class.  Any number of classes may be defined.
 `,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		_, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s", Sender))
+		_, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender")))
 		cobra.CheckErr(err)
 
 		for _, arg := range args {
@@ -56,10 +57,10 @@ the upper limit for each class.  Any number of classes may be defined.
 			if err != nil {
 				cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", arg))
 			}
-			_, err = api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", Sender, name, threshold))
+			_, err = api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", viper.GetString("sender"), name, threshold))
 			cobra.CheckErr(err)
 		}
-		response, err := api.Get(fmt.Sprintf("/filterctl/classes/%s", Sender))
+		response, err := api.Get(fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender")))
 		fmt.Println(response)
 	},
 }

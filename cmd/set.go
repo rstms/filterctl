@@ -26,6 +26,7 @@ import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // setCmd represents the set command
@@ -52,7 +53,7 @@ THRESHOLD is a floating point number.
 			cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", class))
 		}
 
-		response, err := api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", Sender, name, threshold))
+		response, err := api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", viper.GetString("sender"), name, threshold))
 		cobra.CheckErr(err)
 		fmt.Println(response)
 	},

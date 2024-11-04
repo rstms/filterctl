@@ -35,8 +35,7 @@ var classCmd = &cobra.Command{
 		var err error
 		api, err = NewAPIClient()
 		cobra.CheckErr(err)
-		Sender := viper.GetString("sender")
-		if Sender == "" {
+		if viper.GetString("sender") == "" {
 			cobra.CheckErr(errors.New("missing sender"))
 		}
 	},
