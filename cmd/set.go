@@ -54,7 +54,7 @@ THRESHOLD is a floating point number.
 			cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", class))
 		}
 
-		response, err := api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", viper.GetString("sender"), name, threshold))
+		_, response, err := api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", viper.GetString("sender"), name, threshold))
 		cobra.CheckErr(err)
 		fmt.Println(response)
 	},

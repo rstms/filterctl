@@ -41,13 +41,13 @@ be provided to delete specific classes from the configuration.
 		var response string
 		if len(args) == 0 {
 			path := fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender"))
-			r, err := api.Delete(path)
+			_, r, err := api.Delete(path)
 			cobra.CheckErr(err)
 			response = r
 		} else {
 			for _, class := range args {
 				path := fmt.Sprintf("/filterctl/classes/%s/%s", viper.GetString("sender"), class)
-				r, err := api.Delete(path)
+				_, r, err := api.Delete(path)
 				cobra.CheckErr(err)
 				response = r
 			}

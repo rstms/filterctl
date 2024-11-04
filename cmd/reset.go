@@ -34,18 +34,29 @@ var CLASS_PATTERN = regexp.MustCompile(`^\s*([a-zA-Z][a-zA-Z0-9_-]*)=([-0-9\.][0
 
 // resetCmd represents the reset command
 var resetCmd = &cobra.Command{
-	Use:   "reset NAME=THRESHOLD [...]",
+	Use:   "reset [NAME=THRESHOLD,...]",
 	Short: "replace rspamd class thresholds",
 	Long: `
 Replace the set of rspamd class thresholds with a new set provided as
 arguments.  Each class name has a threshold value.  The threshold values set
 the upper limit for each class.  Any number of classes may be defined.
+If no class specifications are provided, default values will be used.
 `,
-	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		api := initAPI()
-		_, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender")))
+
+		// delete current classes
+		_, _, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender")))
 		cobra.CheckErr(err)
+
+		// if no args provided, generate from default config
+		if len(args) == 0 {
+			response, _, err := api.Get("/filterctl/classes/default")
+			cobra.CheckErr(err)
+			for _, class := range response.Classes {
+				args = append(args, fmt.Sprintf("%s=%f", class.Name, class.Score))
+			}
+		}
 
 		for _, arg := range args {
 			matches := CLASS_PATTERN.FindStringSubmatch(arg)
@@ -58,10 +69,10 @@ the upper limit for each class.  Any number of classes may be defined.
 			if err != nil {
 				cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", arg))
 			}
-			_, err = api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", viper.GetString("sender"), name, threshold))
+			_, _, err = api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", viper.GetString("sender"), name, threshold))
 			cobra.CheckErr(err)
 		}
-		response, err := api.Get(fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender")))
+		_, response, err := api.Get(fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender")))
 		fmt.Println(response)
 	},
 }

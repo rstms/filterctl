@@ -59,37 +59,37 @@ func NewAPIClient() (*APIClient, error) {
 	return &api, nil
 }
 
-func (a *APIClient) Get(path string) (string, error) {
+func (a *APIClient) Get(path string) (*APIResponse, string, error) {
 	return a.request("GET", path)
 }
 
-func (a *APIClient) Put(path string) (string, error) {
+func (a *APIClient) Put(path string) (*APIResponse, string, error) {
 	return a.request("PUT", path)
 }
 
-func (a *APIClient) Delete(path string) (string, error) {
+func (a *APIClient) Delete(path string) (*APIResponse, string, error) {
 	return a.request("DELETE", path)
 }
 
-func (a *APIClient) request(method, path string) (string, error) {
+func (a *APIClient) request(method, path string) (*APIResponse, string, error) {
 	if viper.GetBool("verbose") {
 		log.Printf("<-- %s %s", method, a.URL+path)
 	}
 	r, err := http.NewRequest(method, a.URL+path, nil)
 	if err != nil {
-		return "", fmt.Errorf("failed creating %s request: %v", method, err)
+		return nil, "", fmt.Errorf("failed creating %s request: %v", method, err)
 	}
 	response, err := a.Client.Do(r)
 	if err != nil {
-		return "", fmt.Errorf("request failed: %v", err)
+		return nil, "", fmt.Errorf("request failed: %v", err)
 	}
 	defer response.Body.Close()
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return "", fmt.Errorf("failure reading response body: %v", err)
+		return nil, "", fmt.Errorf("failure reading response body: %v", err)
 	}
 	if response.StatusCode < 200 && response.StatusCode > 299 {
-		return "", fmt.Errorf("API returned status [%d] %s", response.StatusCode, response.Status)
+		return nil, "", fmt.Errorf("API returned status [%d] %s", response.StatusCode, response.Status)
 	}
 	if viper.GetBool("verbose") {
 		log.Printf("--> %v\n", string(body))
@@ -97,13 +97,13 @@ func (a *APIClient) request(method, path string) (string, error) {
 	data := APIResponse{}
 	err = json.Unmarshal(body, &data)
 	if err != nil {
-		return "", fmt.Errorf("failed decoding JSON response: %v", err)
+		return nil, "", fmt.Errorf("failed decoding JSON response: %v", err)
 	}
 
 	text, err := json.MarshalIndent(&data, "", "  ")
 	if err != nil {
-		return "", fmt.Errorf("failed formatting JSON response: %v", err)
+		return nil, "", fmt.Errorf("failed formatting JSON response: %v", err)
 	}
 
-	return string(text), nil
+	return &data, string(text), nil
 }

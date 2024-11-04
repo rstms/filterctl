@@ -47,7 +47,7 @@ Subject line of an email to filterctl@emaildomain.ext.
 		}{
 			{"list", "", listCmd.Long},
 			{"delete", "[CLASS, ...]", deleteCmd.Long},
-			{"reset", "CLASS=THRESHOLD [...]", resetCmd.Long},
+			{"reset", "[CLASS=THRESHOLD, ...]", resetCmd.Long},
 			{"set", "CLASS=THRESHOLD", setCmd.Long},
 			{"version", "", versionCmd.Long},
 			{"help", "", "\nOutput this message\n"},
