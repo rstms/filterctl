@@ -23,7 +23,9 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/rstms/rspamd-classes/classes"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +40,7 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("filterctl v%s\n", Version)
+		fmt.Printf("%s=v%s rspamd_classes=v%s uid=%d gid=%d\n", os.Args[0], Version, classes.Version, os.Getuid(), os.Getgid())
 	},
 }
 
