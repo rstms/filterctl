@@ -1,0 +1,51 @@
+From: filterctl@rstms.net
+To: mkrueger@rstms.net
+Subject: filterctl response
+Date: Mon, 04 Nov 2024 03:43:00 -0700
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
+
+Subject Line Commands:
+---------------------------------------------------------------------------=
+---
+list=20
+
+Return the complete set of rspamd class names and threshold values for the
+sender address.
+---------------------------------------------------------------------------=
+---
+delete [CLASS, ...]
+
+Delete rspamd filter classes. If no CLASS names are specified, all classes
+for the sender address are deleted.  Optionally, one or more CLASS names ma=
+y
+be provided to delete specific classes from the configuration.
+---------------------------------------------------------------------------=
+---
+reset CLASS=3DTHRESHOLD [...]
+
+Replace the set of rspamd class thresholds with a new set provided as
+arguments.  Each class name has a threshold value.  The threshold values se=
+t
+the upper limit for each class.  Any number of classes may be defined.
+---------------------------------------------------------------------------=
+---
+set CLASS=3DTHRESHOLD
+
+Add or update a single class name and threshold value.
+CLASS is an identifier string.
+THRESHOLD is a floating point number.
+---------------------------------------------------------------------------=
+---
+version=20
+
+Outputs program name, version, rspamd_classes library version, uid, and gid=
+.
+---------------------------------------------------------------------------=
+---
+help=20
+
+Output this message
+---------------------------------------------------------------------------=
+---
+

@@ -30,7 +30,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var CLASS_PATTERN = regexp.MustCompile(`^\s*([a-zA-Z][a-zA-Z0-9_-]*)=([0-9\.][0-9\.]*)\s*$`)
+var CLASS_PATTERN = regexp.MustCompile(`^\s*([a-zA-Z][a-zA-Z0-9_-]*)=([-0-9\.][0-9\.]*)\s*$`)
 
 // resetCmd represents the reset command
 var resetCmd = &cobra.Command{
@@ -43,6 +43,7 @@ the upper limit for each class.  Any number of classes may be defined.
 `,
 	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		api := initAPI()
 		_, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender")))
 		cobra.CheckErr(err)
 
@@ -66,7 +67,7 @@ the upper limit for each class.  Any number of classes may be defined.
 }
 
 func init() {
-	classCmd.AddCommand(resetCmd)
+	rootCmd.AddCommand(resetCmd)
 
 	// Here you will define your flags and configuration settings.
 

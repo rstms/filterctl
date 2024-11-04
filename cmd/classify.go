@@ -22,35 +22,30 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"errors"
+	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// classCmd represents the class command
-var classCmd = &cobra.Command{
-	Use:   "class",
-	Short: "filterctl class commands",
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		var err error
-		api, err = NewAPIClient()
+// classifyCmd represents the classify command
+var classifyCmd = &cobra.Command{
+	Use:   "classify SCORE",
+	Short: "lookup class for score",
+	Long: `
+Lookup SCORE in the sender's spam class table, returning the resulting CLASS.
+`,
+	Args: cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		api := initAPI()
+		score := args[0]
+		path := fmt.Sprintf("/filterctl/class/%s/%s", viper.GetString("sender"), score)
+		response, err := api.Get(path)
 		cobra.CheckErr(err)
-		if viper.GetString("sender") == "" {
-			cobra.CheckErr(errors.New("missing sender"))
-		}
+		fmt.Println(response)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(classCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// classCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// classCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.AddCommand(classifyCmd)
 }

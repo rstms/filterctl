@@ -29,11 +29,9 @@ func NewAPIClient() (*APIClient, error) {
 	certFile := viper.GetString("cert")
 	keyFile := viper.GetString("key")
 	caFile := viper.GetString("ca")
-	address := viper.GetString("address")
-	port := viper.GetInt("port")
 
 	api := APIClient{
-		URL: fmt.Sprintf("https://%s:%d", address, port),
+		URL: viper.GetString("url"),
 	}
 
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)

@@ -31,7 +31,6 @@ import (
 	"os/exec"
 	"os/user"
 	"regexp"
-	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -113,11 +112,8 @@ func init() {
 	rootCmd.PersistentFlags().String("ca", "/etc/ssl/keymaster.pem", "certificate authority file")
 	viper.BindPFlag("ca", rootCmd.PersistentFlags().Lookup("ca"))
 
-	rootCmd.PersistentFlags().String("address", "localhost", "server address")
-	viper.BindPFlag("address", rootCmd.PersistentFlags().Lookup("addr"))
-
-	rootCmd.PersistentFlags().Int("port", 4443, "server port")
-	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
+	rootCmd.PersistentFlags().String("url", "http://localhost:2016", "server url")
+	viper.BindPFlag("url", rootCmd.PersistentFlags().Lookup("url"))
 
 	rootCmd.PersistentFlags().String("sender", "", "from address")
 	viper.BindPFlag("sender", rootCmd.PersistentFlags().Lookup("sender"))
@@ -199,15 +195,15 @@ func InitIdentity() error {
 	return nil
 }
 
-func ExecuteCommand(cmdline string) error {
+func ExecuteCommand(args []string) error {
 	if viper.GetBool("verbose") {
-		log.Printf("sender=%s command=%s args=%s\n", Sender, os.Args[0], cmdline)
+		log.Printf("sender=%s command=%s args=%v\n", Sender, os.Args[0], args)
 	}
 	if viper.GetBool("disable_exec") {
 		return nil
 	}
 
-	args := append([]string{"--sender", Sender, "class"}, strings.Split(cmdline, " ")...)
+	args = append([]string{"--sender", Sender}, args...)
 	cmd := exec.Command(os.Args[0], args...)
 
 	result, err := run(cmd)
@@ -262,4 +258,13 @@ func run(cmd *exec.Cmd) ([]byte, error) {
 		return nil, fmt.Errorf("subprocess emitted stderr\n%s\n", eBuf.String())
 	}
 	return oBuf.Bytes(), nil
+}
+
+func initAPI() *APIClient {
+	api, err := NewAPIClient()
+	cobra.CheckErr(err)
+	if viper.GetString("sender") == "" {
+		cobra.CheckErr(errors.New("missing sender"))
+	}
+	return api
 }

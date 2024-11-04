@@ -37,6 +37,7 @@ Return the complete set of rspamd class names and threshold values for the
 sender address.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		api := initAPI()
 		path := fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender"))
 		response, err := api.Get(path)
 		cobra.CheckErr(err)
@@ -45,7 +46,7 @@ sender address.
 }
 
 func init() {
-	classCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(listCmd)
 
 	// Here you will define your flags and configuration settings.
 

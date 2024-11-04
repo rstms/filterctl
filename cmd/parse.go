@@ -108,7 +108,16 @@ func ParseFile(input *os.File) error {
 		log.Println("END-ID")
 	}
 
-	return ExecuteCommand(Headers["Subject"])
+	args := strings.Split(Headers["Subject"], " ")
+	if len(args) == 0 {
+		args = []string{"help"}
+	}
+	switch args[0] {
+	case "list", "delete", "reset", "set", "version", "help":
+	default:
+		cobra.CheckErr(errors.New("Send 'help' in Subject line for valid commands"))
+	}
+	return ExecuteCommand(args)
 }
 
 func parseLine(line string) (error, bool) {
