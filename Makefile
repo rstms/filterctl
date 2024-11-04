@@ -24,6 +24,7 @@ clean:
 	go clean
 
 sterile: clean
+	go clean -r -cache -modcache
 	rm -f go.mod go.sum
 
 go.sum: go.mod
