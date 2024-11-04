@@ -67,8 +67,7 @@ sending a message to 'filterctl@your_domain.com' with the command and
 arguments as the 'Subject' line.  The message body is ignored.  A reply
 message is sent for each command containing output and status.
 
-Subject Line Commands:
-`)
+Subject Line Commands:`)
 		rule()
 		for _, cmd := range commands {
 			fmt.Printf("%s %s\n%s", cmd.Name, cmd.Args, cmd.Detail)
