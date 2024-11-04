@@ -52,7 +52,23 @@ Subject line of an email to filterctl@emaildomain.ext.
 			{"version", "", versionCmd.Long},
 			{"help", "", "\nOutput this message\n"},
 		}
-		fmt.Println("Subject Line Commands:")
+		fmt.Println(`
+The rspamd classifier on this mailserver adds an 'X-Spam-Score' header to each
+message.  This header value ranges between -100.0 and +100.0, with higher
+numbers indicating more spam characteristics.
+
+This rspam-classes filter adds an 'X-Spam-Class' header value based on a list
+of class names, each associated with a max score value.  Class names may then
+be used for message filtering in the email client.
+
+Each email user may customize the classes and thresholds used for their own
+account using this email based command interface.  Commands are executed by
+sending a message to 'filterctl@your_domain.com' with the command and
+arguments as the 'Subject' line.  The message body is ignored.  A reply
+message is sent for each command containing output and status.
+
+Subject Line Commands:
+`)
 		rule()
 		for _, cmd := range commands {
 			fmt.Printf("%s %s\n%s", cmd.Name, cmd.Args, cmd.Detail)
