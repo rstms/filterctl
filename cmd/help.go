@@ -52,8 +52,7 @@ Subject line of an email to filterctl@emaildomain.ext.
 			{"version", "", versionCmd.Long},
 			{"help", "", "\nOutput this message\n"},
 		}
-		fmt.Println(`
-The rspamd classifier on this mailserver adds an 'X-Spam-Score' header to each
+		fmt.Println(`The rspamd classifier on this mailserver adds an 'X-Spam-Score' header to each
 message.  This header value ranges between -100.0 and +100.0, with higher
 numbers indicating more spam characteristics.
 
