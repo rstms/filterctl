@@ -22,10 +22,10 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
-
-var api *APIClient
 
 // classCmd represents the class command
 var classCmd = &cobra.Command{
@@ -35,6 +35,10 @@ var classCmd = &cobra.Command{
 		var err error
 		api, err = NewAPIClient()
 		cobra.CheckErr(err)
+		Sender := viper.GetString("sender")
+		if Sender == "" {
+			cobra.CheckErr(errors.New("missing sender"))
+		}
 	},
 }
 

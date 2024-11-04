@@ -47,6 +47,8 @@ var Username string
 var Domains []string
 var Sender string
 
+var api *APIClient
+
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "filterctl",
@@ -116,6 +118,9 @@ func init() {
 
 	rootCmd.PersistentFlags().Int("port", 4443, "server port")
 	viper.BindPFlag("port", rootCmd.PersistentFlags().Lookup("port"))
+
+	rootCmd.PersistentFlags().String("sender", "", "from address")
+	viper.BindPFlag("sender", rootCmd.PersistentFlags().Lookup("sender"))
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -202,7 +207,7 @@ func ExecuteCommand(cmdline string) error {
 		return nil
 	}
 
-	args := append([]string{Sender}, strings.Split(cmdline, " ")...)
+	args := append([]string{"--sender", Sender}, strings.Split(cmdline, " ")...)
 	cmd := exec.Command(os.Args[0], args...)
 
 	result, err := run(cmd)

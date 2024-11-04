@@ -32,15 +32,12 @@ import (
 // versionCmd represents the version command
 var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "display version",
+	Long: `
+Outputs program name, version, rspamd_classes library version, uid, and gid.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("%s=v%s rspamd_classes=v%s uid=%d gid=%d\n", os.Args[0], Version, classes.Version, os.Getuid(), os.Getgid())
+		fmt.Printf("%s v%s\trspamd_classes v%s\tuid=%d\tgid=%d\n", os.Args[0], Version, classes.Version, os.Getuid(), os.Getgid())
 	},
 }
 

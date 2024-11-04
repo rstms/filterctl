@@ -46,13 +46,16 @@ var ReceivedCount int
 // parseCmd represents the parse command
 var parseCmd = &cobra.Command{
 	Use:   "parse",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "parse an email message",
+	Long: `
+Read an email message on stdin, scan headers, and execute the 'class' command.
+The subcommand is called with --sender set to the From address, and the
+subject line is passed as the rest of the command line.
+Header information is used to authorize only locally generated messages.
+An email reply is generated containing the output of the command.
+If the program is called with no arguments, this subcommand is run by default, 
+suitable for inclusion in a .forward file.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
 		err := ParseFile(os.Stdin)
 		cobra.CheckErr(err)

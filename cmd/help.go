@@ -27,38 +27,37 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func rule() {
+	fmt.Println("------------------------------------------------------------------------------")
+}
+
 // helpCmd represents the help command
 var helpCmd = &cobra.Command{
 	Use:   "help",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "describe available commands",
+	Long: `
+Output a description for each of the commands that may be used on the
+Subject line of an email to filterctl@emaildomain.ext.
+`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf(`
-Send mail to filterctl@%s with command in the subject line
-
-  help		
-	list available commands
-
-  version
-	output filterctl version
-
-  class set NAME=THRESHOLD ...
-	add or change a single spam class
-
-  class list
-	return list of spam class thresholds
-
-  class reset NAME=THRESHOLD [NAME=THRESHOLD ...]
-	replace one or more spam class thresholds
-
-  class delete [NAME ...]
-	delete all spam classes, or named spam classes
-`, Domains[0])
+		commands := []struct {
+			Name   string
+			Args   string
+			Detail string
+		}{
+			{"list", "", listCmd.Long},
+			{"delete", "[CLASS, ...]", deleteCmd.Long},
+			{"reset", "CLASS=THRESHOLD [...]", resetCmd.Long},
+			{"set", "CLASS=THRESHOLD", setCmd.Long},
+			{"version", "", versionCmd.Long},
+			{"help", "", "\nOutput this message\n"},
+		}
+		fmt.Println("Subject Line Commands:")
+		rule()
+		for _, cmd := range commands {
+			fmt.Printf("%s %s\n%s", cmd.Name, cmd.Args, cmd.Detail)
+			rule()
+		}
 	},
 }
 

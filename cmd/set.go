@@ -30,15 +30,16 @@ import (
 
 // setCmd represents the set command
 var setCmd = &cobra.Command{
-	Use:   "set ADDRESS CLASS=THRESHOLD",
+	Use:   "set CLASS=THRESHOLD",
 	Short: "set a single class name and threshold",
 	Long: `
-Add or update a single class name and threshold value for an address.
+Add or update a single class name and threshold value.
+CLASS is an identifier string.
+THRESHOLD is a floating point number.
 `,
-	Args: cobra.ExactArgs(2),
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		address := args[0]
-		class := args[1]
+		class := args[0]
 		matches := CLASS_PATTERN.FindStringSubmatch(class)
 
 		if len(matches) != 3 {
@@ -51,7 +52,7 @@ Add or update a single class name and threshold value for an address.
 			cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", class))
 		}
 
-		response, err := api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", address, name, threshold))
+		response, err := api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", Sender, name, threshold))
 		cobra.CheckErr(err)
 		fmt.Println(response)
 	},

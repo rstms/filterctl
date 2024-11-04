@@ -23,31 +23,28 @@ package cmd
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
-	Use:   "delete ADDRESS [CLASS, ...]",
-	Short: "delete all or selected rspamd classes",
+	Use:   "delete [CLASS, ...]",
+	Short: "delete rspamd classes",
 	Long: `
-Delete rspamd filter classes for an email ADDRESS.  If one or more optional
-CLASS names are provided, delete the listed CLASSES from the configuration.
-Without CLASS names, delete the entire configuration for the address.
+Delete rspamd filter classes. If no CLASS names are specified, all classes
+for the sender address are deleted.  Optionally, one or more CLASS names may
+be provided to delete specific classes from the configuration.
 `,
-	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		address := args[0]
 		var response string
-		if len(args) == 1 {
-			path := fmt.Sprintf("/filterctl/classes/%s", address)
+		if len(args) == 0 {
+			path := fmt.Sprintf("/filterctl/classes/%s", Sender)
 			r, err := api.Delete(path)
 			cobra.CheckErr(err)
 			response = r
 		} else {
-			for _, class := range args[1:] {
-				path := fmt.Sprintf("/filterctl/classes/%s/%s", address, class)
+			for _, class := range args {
+				path := fmt.Sprintf("/filterctl/classes/%s/%s", Sender, class)
 				r, err := api.Delete(path)
 				cobra.CheckErr(err)
 				response = r

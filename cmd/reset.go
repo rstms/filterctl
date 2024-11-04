@@ -33,36 +33,33 @@ var CLASS_PATTERN = regexp.MustCompile(`^\s*([a-zA-Z][a-zA-Z0-9_-]*)=([0-9\.][0-
 
 // resetCmd represents the reset command
 var resetCmd = &cobra.Command{
-	Use:   "reset ADDRESS NAME=THRESHOLD ...",
+	Use:   "reset NAME=THRESHOLD [...]",
 	Short: "replace rspamd class thresholds",
 	Long: `
 Replace the set of rspamd class thresholds with a new set provided as
 arguments.  Each class name has a threshold value.  The threshold values set
 the upper limit for each class.  Any number of classes may be defined.
 `,
-	Args: cobra.MinimumNArgs(2),
+	Args: cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		address := args[0]
-		_, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s", address))
+		_, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s", Sender))
 		cobra.CheckErr(err)
 
-		for i, arg := range args {
-			if i > 0 {
-				matches := CLASS_PATTERN.FindStringSubmatch(arg)
-				if len(matches) != 3 {
-					cobra.CheckErr(fmt.Errorf("failed to parse class specifier '%s'", arg))
-				}
-				name := matches[1]
-				threshold := matches[2]
-				_, err := strconv.ParseFloat(threshold, 32)
-				if err != nil {
-					cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", arg))
-				}
-				_, err = api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", address, name, threshold))
-				cobra.CheckErr(err)
+		for _, arg := range args {
+			matches := CLASS_PATTERN.FindStringSubmatch(arg)
+			if len(matches) != 3 {
+				cobra.CheckErr(fmt.Errorf("failed to parse class specifier '%s'", arg))
 			}
+			name := matches[1]
+			threshold := matches[2]
+			_, err := strconv.ParseFloat(threshold, 32)
+			if err != nil {
+				cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", arg))
+			}
+			_, err = api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", Sender, name, threshold))
+			cobra.CheckErr(err)
 		}
-		response, err := api.Get(fmt.Sprintf("/filterctl/classes/%s", address))
+		response, err := api.Get(fmt.Sprintf("/filterctl/classes/%s", Sender))
 		fmt.Println(response)
 	},
 }

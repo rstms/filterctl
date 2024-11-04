@@ -29,15 +29,14 @@ import (
 
 // listCmd represents the list command
 var listCmd = &cobra.Command{
-	Use:   "list ADDRESS",
-	Short: "list rspamd classes for an address",
+	Use:   "list",
+	Short: "list rspamd classes",
 	Long: `
-Return the complete set of rspamd class names and threshold values for an email address.
+Return the complete set of rspamd class names and threshold values for the
+sender address.
 `,
-	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		sender := args[0]
-		path := fmt.Sprintf("/filterctl/classes/%s", sender)
+		path := fmt.Sprintf("/filterctl/classes/%s", Sender)
 		response, err := api.Get(path)
 		cobra.CheckErr(err)
 		fmt.Println(response)
