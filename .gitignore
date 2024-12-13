@@ -2,3 +2,5 @@ filterctl
 filterctl.log
 limbo
 notes
+.filterctl
+.postactivate
