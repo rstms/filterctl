@@ -134,7 +134,12 @@ func ParseFile(input *os.File) error {
 
 func parseLine(line string) (error, bool) {
 
-	isHeader, err := regexp.MatchString(`^[a-zA-Z]`, line)
+	// blank line terminates headers
+	if len(strings.TrimSpace(line)) == 0 {
+		return nil, true
+	}
+
+	isHeader, err := regexp.MatchString(`^[a-zA-Z0-9]`, line)
 	if err != nil {
 		return err, true
 	}
@@ -152,9 +157,6 @@ func parseLine(line string) (error, bool) {
 		Headers[name] = value
 		if name == "Received" {
 			ReceivedCount++
-		}
-		if name == "Subject" {
-			return nil, true
 		}
 		return nil, false
 	}
