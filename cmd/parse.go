@@ -80,12 +80,18 @@ func ParseFile(input *os.File) error {
 	Headers = make(map[string]string)
 	ReceivedCount = 0
 	scanner := bufio.NewScanner(input)
+	if viper.GetBool("verbose") {
+		log.Println("BEGIN-MESSAGE")
+	}
 	for scanner.Scan() {
 		err, done := parseLine(scanner.Text())
 		cobra.CheckErr(err)
 		if done {
 			break
 		}
+	}
+	if viper.GetBool("verbose") {
+		log.Println("END-MESSAGE")
 	}
 
 	if viper.GetBool("verbose") {
@@ -122,6 +128,9 @@ func ParseFile(input *os.File) error {
 
 func parseLine(line string) (error, bool) {
 
+	if viper.GetBool("verbose") {
+		log.Printf("%s\n", line)
+	}
 	isHeader, err := regexp.MatchString(`^[a-zA-Z]`, line)
 	if err != nil {
 		return err, true
