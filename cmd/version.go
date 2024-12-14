@@ -22,11 +22,13 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
 	"github.com/rstms/rspamd-classes/classes"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // versionCmd represents the version command
@@ -37,7 +39,36 @@ var versionCmd = &cobra.Command{
 Outputs program name, version, rspamd_classes library version, uid, and gid.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("%s v%s\trspamd_classes v%s\tuid=%d\tgid=%d\n", os.Args[0], Version, classes.Version, os.Getuid(), os.Getgid())
+
+		type Content struct {
+			Name    string
+			Version string
+			Classes string
+			UID     int
+			GID     int
+		}
+
+		type Response struct {
+			Success bool
+			Message string
+			Version Content
+		}
+
+		response := Response{
+			Success: true,
+			Message: fmt.Sprintf("%s version", viper.GetString("sender")),
+			Version: Content{
+				Name:    os.Args[0],
+				Version: Version,
+				Classes: classes.Version,
+				UID:     os.Getuid(),
+				GID:     os.Getgid(),
+			},
+		}
+
+		out, err := json.MarshalIndent(&response, "", "  ")
+		cobra.CheckErr(err)
+		fmt.Println(string(out))
 	},
 }
 

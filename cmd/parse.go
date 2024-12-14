@@ -27,7 +27,6 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
@@ -80,24 +79,28 @@ func init() {
 func ParseFile(input *os.File) error {
 
 	if viper.GetBool("verbose") {
-		data, err := ioutil.ReadAll(input)
-		cobra.CheckErr(err)
 		log.Println("BEGIN-MESSAGE")
-		log.Printf("%s\n", string(data))
-		log.Println("END-MESSAGE")
-		_, err = input.Seek(0, 0)
-		cobra.CheckErr(err)
 	}
 
 	Headers = make(map[string]string)
 	ReceivedCount = 0
+	lineCount := 0
 	scanner := bufio.NewScanner(input)
 	for scanner.Scan() {
-		err, done := parseLine(scanner.Text())
+		line := scanner.Text()
+		if viper.GetBool("verbose") {
+			log.Printf("%03d: %s\n", lineCount, string(line))
+		}
+		lineCount += 1
+		err, done := parseLine(line)
 		cobra.CheckErr(err)
 		if done {
 			break
 		}
+	}
+
+	if viper.GetBool("verbose") {
+		log.Println("END-MESSAGE")
 	}
 
 	if viper.GetBool("verbose") {
@@ -123,11 +126,6 @@ func ParseFile(input *os.File) error {
 	args := strings.Split(Headers["Subject"], " ")
 	if len(args) == 0 {
 		args = []string{"help"}
-	}
-	switch args[0] {
-	case "list", "delete", "reset", "set", "version", "help":
-	default:
-		cobra.CheckErr(errors.New("Send 'help' in Subject line for valid commands"))
 	}
 	return ExecuteCommand(args)
 }

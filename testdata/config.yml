@@ -1,0 +1,4 @@
+disable_response: true
+verbose: true
+url: http://127.0.0.1:2016
+log_file: testdata/filterctl.log

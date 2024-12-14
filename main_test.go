@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/stretchr/testify/require"
 	"os"
 	"os/exec"
@@ -13,34 +14,53 @@ func TestMessages(t *testing.T) {
 	var cases = []struct {
 		Name          string
 		ExpectSuccess bool
-		OutFile       string
 	}{
-		{"testdata/help", true, "testdata/help.out"},
-		{"testdata/list", true, "testdata/list.out"},
-		{"testdata/reset", true, "testdata/reset.out"},
-		{"testdata/delete-ham", true, "testdata/delete-ham.out"},
-		{"testdata/delete-all", true, "testdata/delete-all.out"},
-		{"testdata/set", true, "testdata/set.out"},
-		{"testdata/fnord", false, "testdata/fnord.out"},
-		{"testdata/empty", false, "testdata/empty.out"},
+		{"help", true},
+		{"list", true},
+		{"reset", true},
+		{"delete-ham", true},
+		{"delete-all", true},
+		{"set", true},
+		{"version", true},
+		{"fnord", true},
+		{"empty", true},
+		{"nobody", true},
+		{"nosubject", true},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			input, err := os.ReadFile(c.Name)
+			input, err := os.ReadFile("testdata/" + c.Name)
 			require.Nil(t, err)
 			ibuf := bytes.NewBuffer(input)
 			obuf := bytes.Buffer{}
-			cmd := exec.Command("./filterctl", "--verbose", "--disable-response", "--url", "http://127.0.0.1:2016")
+			ebuf := bytes.Buffer{}
+			cmd := exec.Command("./filterctl", "--config", "testdata/config.yml")
 			cmd.Stdin = ibuf
 			cmd.Stdout = &obuf
-			err = cmd.Run()
-			if c.ExpectSuccess {
-				require.Nil(t, err)
+			cmd.Stderr = &ebuf
+			fmt.Printf("Run %s %+v\n", c.Name, cmd)
+			runErr := cmd.Run()
+			var exitCode int
+			if runErr != nil {
+				switch e := runErr.(type) {
+				case *exec.ExitError:
+					exitCode = e.ExitCode()
+				default:
+					require.Nil(t, runErr)
+				}
 			} else {
-				require.NotNil(t, err)
+				exitCode = cmd.ProcessState.ExitCode()
 			}
-			err = os.WriteFile(c.OutFile, obuf.Bytes(), 0660)
+			fmt.Printf("Run %s returned: exitCode=%v err=%+v\n", c.Name, exitCode, runErr)
+			err = os.WriteFile("testdata/"+c.Name+".out", obuf.Bytes(), 0660)
 			require.Nil(t, err)
+			err = os.WriteFile("testdata/"+c.Name+".err", ebuf.Bytes(), 0660)
+			require.Nil(t, err)
+			if c.ExpectSuccess {
+				require.Zero(t, exitCode)
+			} else {
+				require.NotZero(t, exitCode)
+			}
 		})
 	}
 }

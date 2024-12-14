@@ -24,14 +24,19 @@ install: build
 	go install
 
 test:
-	fix -- go test -failfast -v . ./...
+	fix -- go test -failfast -v .
+	fix -- go test -failfast -v ./...
 
 release:
 	@$(gitclean) || { [ -n "$(dirty)" ] && echo "allowing dirty release"; }
 	@$(if $(update),gh release delete -y v$(version),)
 	gh release create v$(version) --notes "v$(version)"
 
-clean:
+testclean:
+	rm -f testdata/*.out
+	rm -f testdata/*.err
+
+clean: testclean
 	rm -f $(program)
 	go clean
 

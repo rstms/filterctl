@@ -22,37 +22,45 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
-func rule() {
-	fmt.Println("------------------------------------------------------------------------------")
-}
-
-// helpCmd represents the help command
-var helpCmd = &cobra.Command{
-	Use:   "help",
+// usageCmd represents the usage command
+var usageCmd = &cobra.Command{
+	Use:   "usage",
 	Short: "describe available commands",
 	Long: `
 Output a description for each of the commands that may be used on the
 Subject line of an email to filterctl@emaildomain.ext.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
+		rule := "------------------------------------------------------------------------------\n"
+
+		type Response struct {
+			Success bool
+			Message string
+			Help    []string
+		}
+
 		commands := []struct {
 			Name   string
 			Args   string
 			Detail string
 		}{
 			{"list", "", listCmd.Long},
-			{"delete", "[CLASS, ...]", deleteCmd.Long},
-			{"reset", "[CLASS=THRESHOLD, ...]", resetCmd.Long},
+			{"delete", "[CLASS ...]", deleteCmd.Long},
+			{"reset", "[CLASS=THRESHOLD ...]", resetCmd.Long},
 			{"set", "CLASS=THRESHOLD", setCmd.Long},
 			{"version", "", versionCmd.Long},
-			{"help", "", "\nOutput this message\n"},
+			{"usage", "", "\nOutput this message\n"},
 		}
-		fmt.Println(`The rspamd classifier on this mailserver adds an 'X-Spam-Score' header to each
+
+		text := `The rspamd classifier on this mailserver adds an 'X-Spam-Score' header to each
 message.  This header value ranges between -100.0 and +100.0, with higher
 numbers indicating more spam characteristics.
 
@@ -66,25 +74,25 @@ sending a message to 'filterctl@your_domain.com' with the command and
 arguments as the 'Subject' line.  The message body is ignored.  A reply
 message is sent for each command containing output and status.
 
-Subject Line Commands:`)
-		rule()
+Subject Line Commands:
+`
+		text += rule
 		for _, cmd := range commands {
-			fmt.Printf("%s %s\n%s", cmd.Name, cmd.Args, cmd.Detail)
-			rule()
+			text += fmt.Sprintf("%s %s\n%s\n", cmd.Name, cmd.Args, cmd.Detail)
+			text += rule
 		}
+
+		response := Response{
+			Success: true,
+			Message: fmt.Sprintf("%s usage", viper.GetString("sender")),
+			Help:    strings.Split(text, "\n"),
+		}
+		out, err := json.MarshalIndent(&response, "", "  ")
+		cobra.CheckErr(err)
+		fmt.Println(string(out))
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(helpCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// helpCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// helpCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.AddCommand(usageCmd)
 }

@@ -23,6 +23,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -30,7 +31,9 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
+	"path/filepath"
 	"regexp"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -59,11 +62,13 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		file, err := os.OpenFile("filterctl.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
+		filename := viper.GetString("log_file")
+		file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
 		cobra.CheckErr(err)
 		logFile = file
 		log.SetOutput(logFile)
-
+		log.SetPrefix(fmt.Sprintf("[%d] ", os.Getpid()))
+		log.SetFlags(log.Ldate | log.Ltime | log.Lmsgprefix)
 		err = InitIdentity()
 		cobra.CheckErr(err)
 	},
@@ -92,7 +97,13 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	home, err := os.UserHomeDir()
+	cobra.CheckErr(err)
+
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.filterctl.yaml)")
+
+	rootCmd.PersistentFlags().StringP("log-file", "l", "/var/log/filterctl/filterctl.log", "log filename")
+	viper.BindPFlag("log_file", rootCmd.PersistentFlags().Lookup("log-file"))
 
 	rootCmd.PersistentFlags().BoolP("disable-exec", "d", false, "disable command execution")
 	viper.BindPFlag("disable_exec", rootCmd.PersistentFlags().Lookup("disable-exec"))
@@ -103,10 +114,10 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "enable diagnostic output")
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 
-	rootCmd.PersistentFlags().String("cert", "/home/filterctl/ssl/filterctl.pem", "client certificate PEM file")
+	rootCmd.PersistentFlags().String("cert", filepath.Join(home, "/ssl/filterctl.pem"), "client certificate PEM file")
 	viper.BindPFlag("cert", rootCmd.PersistentFlags().Lookup("cert"))
 
-	rootCmd.PersistentFlags().String("key", "/home/filterctl/ssl/filterctl.key", "client certificate key file")
+	rootCmd.PersistentFlags().String("key", filepath.Join(home, "/ssl/filterctl.key"), "client certificate key file")
 	viper.BindPFlag("key", rootCmd.PersistentFlags().Lookup("key"))
 
 	rootCmd.PersistentFlags().String("ca", "/etc/ssl/keymaster.pem", "certificate authority file")
@@ -117,6 +128,7 @@ func init() {
 
 	rootCmd.PersistentFlags().String("sender", "", "from address")
 	viper.BindPFlag("sender", rootCmd.PersistentFlags().Lookup("sender"))
+
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -131,6 +143,7 @@ func initConfig() {
 
 		// Search config in home directory with name ".filterctl" (without extension).
 		viper.AddConfigPath(home)
+		viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".filterctl")
 	}
@@ -139,11 +152,8 @@ func initConfig() {
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		if viper.GetBool("verbose") {
-			fmt.Fprintln(os.Stderr, "Using config file:", viper.ConfigFileUsed())
-		}
-	}
+	err := viper.ReadInConfig()
+	cobra.CheckErr(err)
 }
 
 func InitIdentity() error {
@@ -165,11 +175,11 @@ func InitIdentity() error {
 			return err
 		}
 		if len(names) != 1 {
-			return fmt.Errorf("unexpected multiple names returned for %s", addr)
+			return errors.New(fmt.Sprintf("unexpected multiple names returned for %s", addr))
 		}
 		matches := pattern.FindStringSubmatch(names[0])
 		if len(matches) != 3 {
-			return fmt.Errorf("unexpected domain format: %s", names[0])
+			return errors.New(fmt.Sprintf("unexpected domain format: %s", names[0]))
 		}
 		host := matches[1]
 		domain := matches[2]
@@ -195,6 +205,16 @@ func InitIdentity() error {
 	return nil
 }
 
+func LogLines(label string, buf []byte) {
+	if len(buf) > 0 {
+		log.Printf("BEGIN_%s\n", label)
+		for i, line := range strings.Split(string(buf), "\n") {
+			log.Printf("%03d: %s\n", i, line)
+		}
+		log.Printf("END_%s\n", label)
+	}
+}
+
 func ExecuteCommand(args []string) error {
 	if viper.GetBool("verbose") {
 		log.Printf("sender=%s command=%s args=%v\n", Sender, os.Args[0], args)
@@ -203,37 +223,97 @@ func ExecuteCommand(args []string) error {
 		return nil
 	}
 
-	args = append([]string{"--sender", Sender}, args...)
+	if args[0] == "help" {
+		args[0] = "usage"
+	}
+	viper.Set("sender", Sender)
+	//args = append([]string{"--sender", Sender}, args...)
 	cmd := exec.Command(os.Args[0], args...)
 
-	result, err := run(cmd)
-	if err != nil {
-		return err
+	cmd.Env = []string{}
+	for _, key := range []string{"HOME", "PATH", "TERM"} {
+		value := fmt.Sprintf("%s=%s", key, os.Getenv(key))
+		cmd.Env = append(cmd.Env, value)
 	}
+	for key, value := range viper.AllSettings() {
+		value := fmt.Sprintf("FILTERCTL_%s=%v", strings.ToUpper(key), value)
+		cmd.Env = append(cmd.Env, value)
+	}
+
 	if viper.GetBool("verbose") {
-		log.Println("BEGIN_RESULT")
-		log.Println(string(result))
-		log.Println("END_RESULT")
+		log.Println("BEGIN_SUBPROCESS_ENV")
+		for _, value := range cmd.Environ() {
+			log.Println(value)
+		}
+		log.Println("END_SUBPROCESS_ENV")
+	}
+
+	exitCode, stdout, stderr, err := run(cmd)
+
+	if viper.GetBool("verbose") {
+		log.Printf("subprocess exited %d\n", exitCode)
+		LogLines("SUBPROCESS_STDOUT", stdout)
+		LogLines("SUBPROCESS_STDERR", stderr)
+	}
+
+	if err != nil || exitCode != 0 || len(stderr) > 0 {
+		fail := map[string]any{
+			"Success": false,
+			"Message": fmt.Sprintf("%s internal failure", Sender),
+			"Help":    "Send 'help' in Subject line for valid commands",
+		}
+		if viper.GetBool("verbose") {
+			detail := map[string]any{}
+			if err != nil {
+				detail["err"] = fmt.Sprintf("%v", err)
+			}
+			detail["exit"] = exitCode
+			ostr := strings.TrimSpace(string(stdout))
+			if len(ostr) > 0 {
+				detail["stdout"] = strings.Split(ostr, "\n")
+			}
+			estr := strings.TrimSpace(string(stderr))
+			if len(estr) > 0 {
+				detail["stderr"] = strings.Split(estr, "\n")
+			}
+		}
+		result, err := json.MarshalIndent(&fail, "", "  ")
+		if err != nil {
+			return err
+		}
+		stdout = result
 	}
 
 	// generate RFC2822 email message
-	message, err := formatEmailMessage("filterctl response", Sender, "filterctl@"+Domains[0], result)
+	message, err := formatEmailMessage("filterctl response", Sender, "filterctl@"+Domains[0], stdout)
 	if err != nil {
 		return err
 	}
 
 	if viper.GetBool("disable_response") {
-		fmt.Println(string(message))
+		if viper.GetBool("verbose") {
+			LogLines("RESPONSE", message)
+		} else {
+			log.Println(string(message))
+		}
 		return nil
 	}
 
 	sendmail := exec.Command("sendmail", Sender)
 	sendmail.Stdin = bytes.NewBuffer(message)
-	_, err = run(sendmail)
-	return err
+	exitCode, stdout, stderr, err = run(sendmail)
+	if err != nil {
+		return err
+	}
+	if exitCode != 0 {
+		log.Printf("sendmail exited %d\n", exitCode)
+		LogLines("SENDMAIL_STDOUT", stdout)
+		LogLines("SENDMAIL_STDERR", stderr)
+	}
+	return nil
 }
 
-func run(cmd *exec.Cmd) ([]byte, error) {
+func run(cmd *exec.Cmd) (int, []byte, []byte, error) {
 	exitCode := -1
 	var oBuf bytes.Buffer
 	var eBuf bytes.Buffer
@@ -245,19 +325,12 @@ func run(cmd *exec.Cmd) ([]byte, error) {
 		case *exec.ExitError:
 			exitCode = e.ExitCode()
 		default:
-			return nil, fmt.Errorf("subprocess exec failed: %v", err)
+			return -1, nil, nil, err
 		}
 	} else {
 		exitCode = cmd.ProcessState.ExitCode()
 	}
-
-	if exitCode != 0 {
-		return nil, fmt.Errorf("subprocess exited %d\n%s\n", exitCode, eBuf.String())
-	}
-	if eBuf.Len() > 0 {
-		return nil, fmt.Errorf("subprocess emitted stderr\n%s\n", eBuf.String())
-	}
-	return oBuf.Bytes(), nil
+	return exitCode, oBuf.Bytes(), eBuf.Bytes(), nil
 }
 
 func initAPI() *APIClient {

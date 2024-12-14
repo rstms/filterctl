@@ -1,6 +1,10 @@
 filterctl
-filterctl.log
 limbo
 notes
 .filterctl
 .postactivate
+testdata/*.err
+testdata/*.out
+*.log
+*.pem
+*.key
