@@ -102,7 +102,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.filterctl.yaml)")
 
-	rootCmd.PersistentFlags().StringP("log-file", "l", "/var/log/filterctl/filterctl.log", "log filename")
+	rootCmd.PersistentFlags().StringP("log-file", "l", "/var/log/filterctl.log", "log filename")
 	viper.BindPFlag("log_file", rootCmd.PersistentFlags().Lookup("log-file"))
 
 	rootCmd.PersistentFlags().BoolP("disable-exec", "d", false, "disable command execution")
