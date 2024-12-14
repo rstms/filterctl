@@ -42,7 +42,7 @@ import (
 var cfgFile string
 var logFile *os.File
 
-const Version = "0.3.15"
+const Version = "0.3.16"
 
 var Hostname string
 var Username string
