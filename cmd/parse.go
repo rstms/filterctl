@@ -111,6 +111,7 @@ func ParseFile(input *os.File) error {
 		log.Printf("Domains: %v\n", Domains)
 		log.Printf("Sender: %s\n", Sender)
 		log.Printf("To: %s\n", Headers["To"])
+		log.Printf("Suffix: %s\n", Headers["X-Plus-Suffix"])
 		log.Println("END-ID")
 	}
 
