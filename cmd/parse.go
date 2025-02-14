@@ -161,7 +161,7 @@ func checkHeaders(headers map[string]string) error {
 	if err != nil {
 		return err
 	}
-	err = checkReceived()
+	err = checkReceived(headers)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func checkDKIM() error {
 	return errors.New("domain not found in DKIM Signature")
 }
 
-func checkReceived() error {
+func checkReceived(headers map[string]string) error {
 	if ReceivedCount != 1 {
 		return fmt.Errorf("Received: bad count; expected 1,  got %d", ReceivedCount)
 	}
@@ -205,7 +205,7 @@ func checkReceived() error {
 	}
 	rxHostname := matches[1]
 	rxUsername := matches[2]
-	//toSuffix := matches[3]
+	headers["X-Plus-Suffix"] = matches[3]
 	rxDomain := matches[4]
 
 	if rxHostname != Hostname {

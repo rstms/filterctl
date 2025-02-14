@@ -26,6 +26,7 @@ func TestMessages(t *testing.T) {
 		{"empty", true},
 		{"nobody", true},
 		{"nosubject", true},
+		{"suffix", true},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
