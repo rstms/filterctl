@@ -101,7 +101,7 @@ func ParseFile(input *os.File) error {
 		log.Println("END-HEADERS")
 	}
 
-	err := checkHeaders(Headers)
+	err := checkHeaders()
 	cobra.CheckErr(err)
 
 	if viper.GetBool("verbose") {
@@ -152,7 +152,7 @@ func parseLine(line string) (error, bool) {
 	return fmt.Errorf("failed to parse: %s", line), true
 }
 
-func checkHeaders(headers map[string]string) error {
+func checkHeaders() error {
 	err := checkDKIM()
 	if err != nil {
 		return err
@@ -161,7 +161,7 @@ func checkHeaders(headers map[string]string) error {
 	if err != nil {
 		return err
 	}
-	err = checkReceived(headers)
+	err = checkReceived()
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func checkDKIM() error {
 	return errors.New("domain not found in DKIM Signature")
 }
 
-func checkReceived(headers map[string]string) error {
+func checkReceived() error {
 	if ReceivedCount != 1 {
 		return fmt.Errorf("Received: bad count; expected 1,  got %d", ReceivedCount)
 	}
@@ -205,7 +205,7 @@ func checkReceived(headers map[string]string) error {
 	}
 	rxHostname := matches[1]
 	rxUsername := matches[2]
-	headers["X-Plus-Suffix"] = matches[3]
+	Headers["X-Plus-Suffix"] = matches[3]
 	rxDomain := matches[4]
 
 	if rxHostname != Hostname {
