@@ -23,40 +23,42 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// deleteCmd represents the delete command
-var deleteCmd = &cobra.Command{
-	Use:   "delete [CLASS, ...]",
-	Short: "delete rspamd classes",
+// rmbookCmd represents the rmbook command
+var rmbookCmd = &cobra.Command{
+	Use:   "rmbook TOKEN",
+	Short: "delete an address book",
 	Long: `
-Delete rspamd filter classes. If no CLASS names are specified, all classes
-for the sender address are deleted.  Optionally, one or more CLASS names may
-be provided to delete specific classes from the configuration.
+Delete the address book of the sender address with the token matching TOKEN.  
+All addresses in the address book are UNRECOVERABLY LOST.
 `,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		api := initAPI()
-		var response string
-		var data APIResponse
-		if len(args) == 0 {
-			path := fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender"))
-			r, err := api.Delete(path, &data)
-			cobra.CheckErr(err)
-			response = r
-		} else {
-			for _, class := range args {
-				path := fmt.Sprintf("/filterctl/classes/%s/%s/", viper.GetString("sender"), class)
-				r, err := api.Delete(path, &data)
-				cobra.CheckErr(err)
-				response = r
-			}
-		}
-		fmt.Println(response)
+		filterctld := initAPI()
+		user := viper.GetString("sender")
+		token := args[0]
+		path := fmt.Sprintf("/filterctl/book/%s/%s/", user, token)
+		var response APIResponse
+		text, err := filterctld.Delete(path, &response)
+		cobra.CheckErr(err)
+		fmt.Println(text)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(rmbookCmd)
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// rmbookCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// rmbookCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

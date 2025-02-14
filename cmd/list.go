@@ -38,8 +38,9 @@ sender address.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		api := initAPI()
-		path := fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender"))
-		_, response, err := api.Get(path)
+		var data APIClassesResponse
+		path := fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender"))
+		response, err := api.Get(path, &data)
 		cobra.CheckErr(err)
 		fmt.Println(response)
 	},

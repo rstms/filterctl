@@ -23,40 +23,28 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// deleteCmd represents the delete command
-var deleteCmd = &cobra.Command{
-	Use:   "delete [CLASS, ...]",
-	Short: "delete rspamd classes",
+// passwdCmd represents the passwd command
+var passwdCmd = &cobra.Command{
+	Use:   "passwd",
+	Short: "request address book password",
 	Long: `
-Delete rspamd filter classes. If no CLASS names are specified, all classes
-for the sender address are deleted.  Optionally, one or more CLASS names may
-be provided to delete specific classes from the configuration.
+Return address book password for sender
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := initAPI()
-		var response string
-		var data APIResponse
-		if len(args) == 0 {
-			path := fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender"))
-			r, err := api.Delete(path, &data)
-			cobra.CheckErr(err)
-			response = r
-		} else {
-			for _, class := range args {
-				path := fmt.Sprintf("/filterctl/classes/%s/%s/", viper.GetString("sender"), class)
-				r, err := api.Delete(path, &data)
-				cobra.CheckErr(err)
-				response = r
-			}
-		}
-		fmt.Println(response)
+		filterctld := initAPI()
+		var response APIPasswordResponse
+		path := fmt.Sprintf("/filterctl/passwd/%s/", viper.GetString("sender"))
+		text, err := filterctld.Get(path, &response)
+		cobra.CheckErr(err)
+		fmt.Println(text)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(passwdCmd)
 }

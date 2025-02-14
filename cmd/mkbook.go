@@ -23,40 +23,49 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-// deleteCmd represents the delete command
-var deleteCmd = &cobra.Command{
-	Use:   "delete [CLASS, ...]",
-	Short: "delete rspamd classes",
+// mkbookCmd represents the mkbook command
+var mkbookCmd = &cobra.Command{
+	Use:   "mkbook NAME DESCRIPTION",
+	Short: "create a new address book",
 	Long: `
-Delete rspamd filter classes. If no CLASS names are specified, all classes
-for the sender address are deleted.  Optionally, one or more CLASS names may
-be provided to delete specific classes from the configuration.
+Create a new address book under the sender's address with the NAME and DESCRIPTION.
+returns a data structure including the new book token and URI
 `,
+	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		api := initAPI()
-		var response string
-		var data APIResponse
-		if len(args) == 0 {
-			path := fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender"))
-			r, err := api.Delete(path, &data)
-			cobra.CheckErr(err)
-			response = r
-		} else {
-			for _, class := range args {
-				path := fmt.Sprintf("/filterctl/classes/%s/%s/", viper.GetString("sender"), class)
-				r, err := api.Delete(path, &data)
-				cobra.CheckErr(err)
-				response = r
-			}
+		filterctld := initAPI()
+		type Request struct {
+			Username    string
+			Bookname    string
+			Description string
 		}
-		fmt.Println(response)
+		request := Request{
+			Username:    viper.GetString("sender"),
+			Bookname:    args[0],
+			Description: args[1],
+		}
+		var response APIResponse
+		text, err := filterctld.Post("/filterctl/book/", &request, &response)
+		cobra.CheckErr(err)
+		fmt.Println(text)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(deleteCmd)
+	rootCmd.AddCommand(mkbookCmd)
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// mkbookCmd.PersistentFlags().String("foo", "", "A help for foo")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// mkbookCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

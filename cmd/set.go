@@ -41,6 +41,7 @@ THRESHOLD is a floating point number.
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		api := initAPI()
+		var response APIResponse
 		class := args[0]
 		matches := CLASS_PATTERN.FindStringSubmatch(class)
 
@@ -54,22 +55,12 @@ THRESHOLD is a floating point number.
 			cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", class))
 		}
 
-		_, response, err := api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", viper.GetString("sender"), name, threshold))
+		text, err := api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s/", viper.GetString("sender"), name, threshold), &response)
 		cobra.CheckErr(err)
-		fmt.Println(response)
+		fmt.Println(text)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(setCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// setCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// setCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

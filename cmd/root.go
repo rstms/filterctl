@@ -49,18 +49,29 @@ var Username string
 var Domains []string
 var Sender string
 
-var api *APIClient
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "filterctl",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
+	Short: "mail command processor for rspam class filter",
+	Long: `
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+filterctl is a mail-based command processor for user management of spam class filter settings.
+
+The program is executed as the filterctl user from the /home/filterctl/.forward file:
+
+    |/usr/local/bin/filterctl
+
+It interprets the subject line as a command, executes it, and sends the output as the body
+of a new email message sent back to the sender address.
+
+It relies on the mailserver configuration to guarantee that only local mail originating from
+a local account via an authorized secure SMTPS session is accepted for the the filterctl user.
+In this way it relies on the security of the mailserver's auth mechanism to control access to
+the commands.  The sender address is verified as an authorized local user.
+
+Command actions issue API requests to filterctld running at http://localhost:2016/filterctl
+
+`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		filename := viper.GetString("log_file")
 		file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)

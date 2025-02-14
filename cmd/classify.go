@@ -39,10 +39,11 @@ Lookup SCORE in the sender's spam class table, returning the resulting CLASS.
 	Run: func(cmd *cobra.Command, args []string) {
 		api := initAPI()
 		score := args[0]
-		path := fmt.Sprintf("/filterctl/class/%s/%s", viper.GetString("sender"), score)
-		_, response, err := api.Get(path)
+		path := fmt.Sprintf("/filterctl/class/%s/%s/", viper.GetString("sender"), score)
+		var response APIResponse
+		text, err := api.Get(path, &response)
 		cobra.CheckErr(err)
-		fmt.Println(response)
+		fmt.Println(text)
 	},
 }
 

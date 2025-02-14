@@ -44,14 +44,15 @@ If no class specifications are provided, default values will be used.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		api := initAPI()
+		var response APIClassesResponse
 
 		// delete current classes
-		_, _, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender")))
+		_, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender")), &response)
 		cobra.CheckErr(err)
 
 		// if no args provided, generate from default config
 		if len(args) == 0 {
-			response, _, err := api.Get("/filterctl/classes/default")
+			_, err := api.Get("/filterctl/classes/default/", &response)
 			cobra.CheckErr(err)
 			for _, class := range response.Classes {
 				args = append(args, fmt.Sprintf("%s=%f", class.Name, class.Score))
@@ -69,11 +70,11 @@ If no class specifications are provided, default values will be used.
 			if err != nil {
 				cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", arg))
 			}
-			_, _, err = api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s", viper.GetString("sender"), name, threshold))
+			_, err = api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s/", viper.GetString("sender"), name, threshold), &response)
 			cobra.CheckErr(err)
 		}
-		_, response, err := api.Get(fmt.Sprintf("/filterctl/classes/%s", viper.GetString("sender")))
-		fmt.Println(response)
+		text, err := api.Get(fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender")), &response)
+		fmt.Println(text)
 	},
 }
 

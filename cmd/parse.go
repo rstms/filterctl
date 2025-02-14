@@ -35,7 +35,7 @@ import (
 )
 
 var HEADER_PATTERN = regexp.MustCompile(`^([a-zA-Z _-]*): (.*)$`)
-var RECEIVED_PATTERN = regexp.MustCompile(`^from .* by ([a-z][a-z\.]*) \(OpenSMTPD\) with ESMTPSA .* auth=yes user=([a-z][a-z_-]*) for <filterctl@([a-z][a-z\.]*)>.*$`)
+var RECEIVED_PATTERN = regexp.MustCompile(`^from .* by ([a-z][a-z\.]*) \(OpenSMTPD\) with ESMTPSA .* auth=yes user=([a-z][a-z_-]*) for <filterctl(\+[a-zA-Z_-]+){0,1}@([a-z][a-z\.]*)>.*$`)
 var FROM_PATTERN = regexp.MustCompile(`^.* <([a-z][a-z_-]*)@([a-z][a-z\.]*)>$`)
 var DKIM_DOMAIN_PATTERN = regexp.MustCompile(`d=([a-z\.]*)$`)
 
@@ -64,16 +64,6 @@ suitable for inclusion in a .forward file.
 
 func init() {
 	rootCmd.AddCommand(parseCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// parseCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// parseCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
 
 func ParseFile(input *os.File) error {
@@ -120,6 +110,7 @@ func ParseFile(input *os.File) error {
 		log.Printf("Username: %s\n", Username)
 		log.Printf("Domains: %v\n", Domains)
 		log.Printf("Sender: %s\n", Sender)
+		log.Printf("To: %s\n", Headers["To"])
 		log.Println("END-ID")
 	}
 
@@ -206,12 +197,16 @@ func checkReceived() error {
 		return errors.New("Received: missing header")
 	}
 	matches := RECEIVED_PATTERN.FindStringSubmatch(received)
-	if len(matches) != 4 {
+	for i, match := range matches {
+		fmt.Printf("match[%d] '%s'\n", i, match)
+	}
+	if len(matches) != 5 {
 		return errors.New("Received: parse failed")
 	}
 	rxHostname := matches[1]
 	rxUsername := matches[2]
-	rxDomain := matches[3]
+	//toSuffix := matches[3]
+	rxDomain := matches[4]
 
 	if rxHostname != Hostname {
 		return fmt.Errorf("Received: hostname mismatch; expected %s, got %s", Hostname, rxHostname)
