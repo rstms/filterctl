@@ -8,7 +8,16 @@ DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; s=mailbox_1729240475;
   YfMnLrauTTQezwXliGl1iMELRNwZCL5F0grEyxwD8H7kbI=
 Subject: fnord
 
-body line one
-body line two
-body line tree
-end_body
+Forwarded Message
+blah blah blah
+
+-------- Forwarded Message --------
+Subject:       test5560
+Date:  Fri, 14 Feb 2025 14:43:12 -0700 (MST)
+From:  test@bootnotice.com
+To:    test@mailcapsule.io
+
+original body line one
+original body line two
+original line tree
+original end_body

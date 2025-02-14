@@ -38,6 +38,12 @@ var HEADER_PATTERN = regexp.MustCompile(`^([a-zA-Z _-]*): (.*)$`)
 var RECEIVED_PATTERN = regexp.MustCompile(`^from .* by ([a-z][a-z\.]*) \(OpenSMTPD\) with ESMTPSA .* auth=yes user=([a-z][a-z_-]*) for <filterctl(\+[a-zA-Z_-]+){0,1}@([a-z][a-z\.]*)>.*$`)
 var FROM_PATTERN = regexp.MustCompile(`^.* <([a-z][a-z_-]*)@([a-z][a-z\.]*)>$`)
 var DKIM_DOMAIN_PATTERN = regexp.MustCompile(`d=([a-z\.]*)$`)
+var FORWARDED_PATTERN = regexp.MustCompile(`.*----- Forwarded Message -----.*`)
+var FORWARDED_FROM_PATTERN = regexp.MustCompile(`^\s*From:\s+(\S+)\s*$`)
+var FORWARDED_TO_PATTERN = regexp.MustCompile(`^\s*To:\s+(\S+)\s*$`)
+
+/*
+ */
 
 var Headers map[string]string
 var LastHeader string
@@ -190,6 +196,27 @@ func parseHeaderLine(line string) (error, bool) {
 }
 
 func parseBodyLine(line string) (error, bool) {
+	if FORWARDED_PATTERN.MatchString(line) {
+		Headers["X-Forwarded-Marker"] = strings.TrimSpace(line)
+		return nil, false
+	}
+
+	if Headers["X-Forwarded-Marker"] != "" {
+
+		toMatches := FORWARDED_TO_PATTERN.FindStringSubmatch(line)
+		if len(toMatches) > 1 {
+			Headers["X-Forwarded-To"] = toMatches[1]
+		}
+
+		fromMatches := FORWARDED_FROM_PATTERN.FindStringSubmatch(line)
+		if len(fromMatches) > 1 {
+			Headers["X-Forwarded-From"] = fromMatches[1]
+		}
+
+		if Headers["X-Forwarded-From"] != "" && Headers["X-Forwarded-To"] != "" {
+			return nil, true
+		}
+	}
 	return nil, false
 }
 
