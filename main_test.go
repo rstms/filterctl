@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/stretchr/testify/require"
+	"log"
 	"os"
 	"os/exec"
 	"testing"
@@ -30,7 +31,7 @@ func TestMessages(t *testing.T) {
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {
-			fmt.Printf("input: %s\n", c.Name)
+			log.Printf("BEGIN_TEST: %s\n", c.Name)
 			input, err := os.ReadFile("testdata/" + c.Name)
 			require.Nil(t, err)
 			ibuf := bytes.NewBuffer(input)

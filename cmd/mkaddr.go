@@ -23,6 +23,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -52,6 +53,12 @@ Add an email address to the named address book
 		var response APIResponse
 		text, err := filterctld.Post("/filterctl/address/", &request, &response)
 		cobra.CheckErr(err)
+		if strings.Contains(response.Message, "QueryAddressBook failed: 404 Not Found") {
+			_, err := AddAddressBook(request.Username, request.Bookname, "")
+			cobra.CheckErr(err)
+			text, err = filterctld.Post("/filterctl/address/", &request, &response)
+			cobra.CheckErr(err)
+		}
 		fmt.Println(text)
 	},
 }

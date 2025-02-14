@@ -2,4 +2,5 @@ disable_response: true
 verbose: true
 debug: true
 url: http://127.0.0.1:2016
-log_file: testdata/filterctl.log
+log_file: stderr
+#log_file: testdata/filterctl.log

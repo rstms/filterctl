@@ -38,19 +38,7 @@ returns a data structure including the new book token and URI
 `,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		filterctld := initAPI()
-		type Request struct {
-			Username    string
-			Bookname    string
-			Description string
-		}
-		request := Request{
-			Username:    viper.GetString("sender"),
-			Bookname:    args[0],
-			Description: args[1],
-		}
-		var response APIResponse
-		text, err := filterctld.Post("/filterctl/book/", &request, &response)
+		text, err := AddAddressBook(viper.GetString("sender"), args[0], args[1])
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
@@ -58,14 +46,20 @@ returns a data structure including the new book token and URI
 
 func init() {
 	rootCmd.AddCommand(mkbookCmd)
+}
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// mkbookCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// mkbookCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+func AddAddressBook(username, bookname, description string) (string, error) {
+	filterctld := initAPI()
+	type Request struct {
+		Username    string
+		Bookname    string
+		Description string
+	}
+	request := Request{
+		Username:    username,
+		Bookname:    bookname,
+		Description: description,
+	}
+	var response APIResponse
+	return filterctld.Post("/filterctl/book/", &request, &response)
 }

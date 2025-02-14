@@ -42,6 +42,7 @@ var DKIM_DOMAIN_PATTERN = regexp.MustCompile(`d=([a-z\.]*)$`)
 var Headers map[string]string
 var LastHeader string
 var ReceivedCount int
+var PlusSuffix string
 
 // parseCmd represents the parse command
 var parseCmd = &cobra.Command{
@@ -71,39 +72,46 @@ func ParseFile(input *os.File) error {
 	if viper.GetBool("verbose") {
 		log.Println("BEGIN-MESSAGE")
 	}
-
 	Headers = make(map[string]string)
 	ReceivedCount = 0
 	lineCount := 0
 	scanner := bufio.NewScanner(input)
 	inHeader := true
-	inBody := false
+	scanComplete := false
+	log.Println("BEGIN parseHeaders")
 	for scanner.Scan() {
 		line := scanner.Text()
 		if viper.GetBool("verbose") {
 			log.Printf("%03d: %s\n", lineCount, string(line))
 		}
 		lineCount += 1
-		switch {
-		case inHeader:
+
+		if inHeader {
 			err, done := parseHeaderLine(line)
 			cobra.CheckErr(err)
 			if done {
 				inHeader = false
-				suffix, ok := Headers["X-Plus-Suffix"]
-				if ok && suffix != "" {
-					inBody = true
+				log.Println("END parseHeaders")
+				err := checkHeaders()
+				cobra.CheckErr(err)
+				log.Printf("Headers[To]: %s\n", Headers["To"])
+				log.Printf("Headers[X-Plus-Suffix]: %s\n", Headers["X-Plus-Suffix"])
+				if Headers["X-Plus-Suffix"] != "" {
+					log.Println("BEGIN parseBody")
+				} else {
+					scanComplete = true
 				}
 			}
-		case inBody:
+		} else {
 			err, done := parseBodyLine(line)
 			cobra.CheckErr(err)
 			if done {
-				inBody = false
+				log.Println("END parseBody")
+				scanComplete = true
 			}
 		}
 
-		if !inHeader && !inBody {
+		if scanComplete {
 			break
 		}
 
@@ -113,16 +121,7 @@ func ParseFile(input *os.File) error {
 		log.Println("END-MESSAGE")
 	}
 
-	if viper.GetBool("verbose") {
-		log.Println("BEGIN-HEADERS")
-		for header, value := range Headers {
-			log.Printf("[%s] %s\n", header, value)
-		}
-		log.Println("END-HEADERS")
-	}
-
-	err := checkHeaders()
-	cobra.CheckErr(err)
+	printHeaders()
 
 	if viper.GetBool("verbose") {
 		log.Println("BEGIN-ID")
@@ -135,11 +134,28 @@ func ParseFile(input *os.File) error {
 		log.Println("END-ID")
 	}
 
-	args := strings.Split(Headers["Subject"], " ")
-	if len(args) == 0 {
-		args = []string{"help"}
+	var args []string
+	if Headers["X-Plus-Suffix"] != "" {
+		book := strings.TrimPrefix(Headers["X-Plus-Suffix"], "+")
+		address := "howdy@annoyances.com"
+		args = []string{"add", book, address}
+	} else {
+		args = strings.Split(Headers["Subject"], " ")
+		if len(args) == 0 {
+			args = []string{"help"}
+		}
 	}
 	return ExecuteCommand(args)
+}
+
+func printHeaders() {
+	if viper.GetBool("verbose") {
+		log.Println("BEGIN-HEADERS")
+		for header, value := range Headers {
+			log.Printf("[%s] %s\n", header, value)
+		}
+		log.Println("END-HEADERS")
+	}
 }
 
 func parseHeaderLine(line string) (error, bool) {
@@ -174,7 +190,7 @@ func parseHeaderLine(line string) (error, bool) {
 }
 
 func parseBodyLine(line string) (error, bool) {
-	return nil, true
+	return nil, false
 }
 
 func checkHeaders() error {

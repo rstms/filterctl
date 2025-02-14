@@ -74,13 +74,17 @@ Command actions issue API requests to filterctld running at http://localhost:201
 `,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		filename := viper.GetString("log_file")
-		file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
-		cobra.CheckErr(err)
-		logFile = file
-		log.SetOutput(logFile)
+		if filename == "stderr" {
+			log.SetOutput(os.Stderr)
+		} else {
+			file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
+			cobra.CheckErr(err)
+			logFile = file
+			log.SetOutput(logFile)
+		}
 		log.SetPrefix(fmt.Sprintf("[%d] ", os.Getpid()))
 		log.SetFlags(log.Ldate | log.Ltime | log.Lmsgprefix)
-		err = InitIdentity()
+		err := InitIdentity()
 		cobra.CheckErr(err)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
