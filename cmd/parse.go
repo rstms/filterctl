@@ -76,17 +76,37 @@ func ParseFile(input *os.File) error {
 	ReceivedCount = 0
 	lineCount := 0
 	scanner := bufio.NewScanner(input)
+	inHeader := true
+	inBody := false
 	for scanner.Scan() {
 		line := scanner.Text()
 		if viper.GetBool("verbose") {
 			log.Printf("%03d: %s\n", lineCount, string(line))
 		}
 		lineCount += 1
-		err, done := parseLine(line)
-		cobra.CheckErr(err)
-		if done {
+		switch {
+		case inHeader:
+			err, done := parseHeaderLine(line)
+			cobra.CheckErr(err)
+			if done {
+				inHeader = false
+				suffix, ok := Headers["X-Plus-Suffix"]
+				if ok && suffix != "" {
+					inBody = true
+				}
+			}
+		case inBody:
+			err, done := parseBodyLine(line)
+			cobra.CheckErr(err)
+			if done {
+				inBody = false
+			}
+		}
+
+		if !inHeader && !inBody {
 			break
 		}
+
 	}
 
 	if viper.GetBool("verbose") {
@@ -122,7 +142,7 @@ func ParseFile(input *os.File) error {
 	return ExecuteCommand(args)
 }
 
-func parseLine(line string) (error, bool) {
+func parseHeaderLine(line string) (error, bool) {
 
 	// blank line terminates headers
 	if len(strings.TrimSpace(line)) == 0 {
@@ -151,6 +171,10 @@ func parseLine(line string) (error, bool) {
 		return nil, false
 	}
 	return fmt.Errorf("failed to parse: %s", line), true
+}
+
+func parseBodyLine(line string) (error, bool) {
+	return nil, true
 }
 
 func checkHeaders() error {
