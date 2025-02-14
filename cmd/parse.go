@@ -143,13 +143,21 @@ func ParseFile(input *os.File) error {
 	var args []string
 	if Headers["X-Plus-Suffix"] != "" {
 		book := strings.TrimPrefix(Headers["X-Plus-Suffix"], "+")
-		address := "howdy@annoyances.com"
+		if book == "" {
+			return fmt.Errorf("null plus-suffix address book")
+		}
+		address := strings.TrimSpace(Headers["X-Forwarded-From"])
+		if address == "" {
+			return fmt.Errorf("plus-suffix forwarded from address not found")
+		}
+
 		args = []string{"add", book, address}
 	} else {
-		args = strings.Split(Headers["Subject"], " ")
-		if len(args) == 0 {
-			args = []string{"help"}
+		subject := strings.TrimSpace(Headers["Subject"])
+		if subject == "" {
+			subject = "help"
 		}
+		args = strings.Split(subject, " ")
 	}
 	return ExecuteCommand(args)
 }
