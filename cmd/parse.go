@@ -198,7 +198,7 @@ func checkReceived() error {
 	}
 	matches := RECEIVED_PATTERN.FindStringSubmatch(received)
 	for i, match := range matches {
-		fmt.Printf("match[%d] '%s'\n", i, match)
+		log.Printf("match[%d] '%s'\n", i, match)
 	}
 	if len(matches) != 5 {
 		return errors.New("Received: parse failed")
