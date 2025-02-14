@@ -2,8 +2,9 @@ module github.com/rstms/filterctl
 
 go 1.22.5
 
+toolchain go1.23.6
+
 require (
-	github.com/rstms/mabctl v1.1.2
 	github.com/rstms/rspamd-classes v0.3.3
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
