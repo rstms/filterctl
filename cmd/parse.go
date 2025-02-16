@@ -22,11 +22,14 @@ THE SOFTWARE.
 package cmd
 
 import (
+	//"bufio"
 	"bufio"
-	"errors"
+	"bytes"
 	"fmt"
+	"github.com/emersion/go-message/mail"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"io"
 	"log"
 	"os"
 	"os/user"
@@ -34,20 +37,21 @@ import (
 	"strings"
 )
 
-var HEADER_PATTERN = regexp.MustCompile(`^([a-zA-Z _-]*): (.*)$`)
+// var HEADER_PATTERN = regexp.MustCompile(`^([a-zA-Z _-]*): (.*)$`)
 var RECEIVED_PATTERN = regexp.MustCompile(`^from .* by ([a-z][a-z\.]*) \(OpenSMTPD\) with ESMTPSA .* auth=yes user=([a-z][a-z_-]*) for <filterctl(\+[a-zA-Z_-]+){0,1}@([a-z][a-z\.]*)>.*$`)
-var EMAIL_ADDRESS_PATTERN = regexp.MustCompile(`^.* <([a-z][a-z_-]*)@([a-z][a-z\.]*)>$`)
+
+// var EMAIL_ADDRESS_PATTERN = regexp.MustCompile(`^.* <([a-z][a-z_-]*)@([a-z][a-z\.]*)>$`)
 var DKIM_DOMAIN_PATTERN = regexp.MustCompile(`d=([a-z\.]*)$`)
 var FORWARDED_PATTERN = regexp.MustCompile(`.*----- Forwarded Message -----.*`)
 
-/*
- */
+// var PLUS_SUFFIX_ADDRESS_PATTERN = regexp.MustCompile(`^.* <[a-z][a-z_-]+\+([a-z][a-z_-]+)@[a-z][a-z\.]*>$`)
+var MOZ_HEADERS_TABLE_BEGIN_PATTERN = regexp.MustCompile(`class="moz-email-headers-table"`)
+var MOZ_HEADERS_TABLE_HEADER_PATTERN = regexp.MustCompile(`<th [^>]*>([a-zA-Z]+): </th>`)
+var MOZ_HEADERS_TABLE_ADDRESS_PATTERN = regexp.MustCompile(`.*<a class="moz-txt-link.*" href="mailto:([^"]*)">[^<]*</a>.*`)
+var MOZ_HEADERS_TABLE_END_PATTERN = regexp.MustCompile(`</table>`)
 
 var Headers map[string]string
-var ForwardHeaders map[string]string
-var LastHeader string
 var ReceivedCount int
-var PlusSuffix string
 
 // parseCmd represents the parse command
 var parseCmd = &cobra.Command{
@@ -63,8 +67,7 @@ If the program is called with no arguments, this subcommand is run by default,
 suitable for inclusion in a .forward file.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		err := ParseFile(os.Stdin)
-		cobra.CheckErr(err)
+		cobra.CheckErr(ParseFile(os.Stdin))
 	},
 }
 
@@ -74,290 +77,338 @@ func init() {
 
 func ParseFile(input *os.File) error {
 
-	if viper.GetBool("verbose") {
-		log.Println("BEGIN-MESSAGE")
-	}
-	var forwardTo, forwardFrom string
-	Headers = make(map[string]string)
-	ForwardHeaders = make(map[string]string)
-	ReceivedCount = 0
-	lineCount := 0
-	scanner := bufio.NewScanner(input)
-	inHeader := true
-	scanComplete := false
-	log.Println("BEGIN parseHeaders")
-	for scanner.Scan() {
-		line := scanner.Text()
-		if viper.GetBool("verbose") {
-			log.Printf("%03d: %s\n", lineCount, string(line))
-		}
-		lineCount += 1
-
-		if inHeader {
-			done, err := parseHeaderLine(line, false)
-			cobra.CheckErr(err)
-			if done {
-				inHeader = false
-				log.Println("END parseHeaders")
-				err := checkHeaders()
-				cobra.CheckErr(err)
-				log.Printf("Headers[To]: %s\n", Headers["To"])
-				log.Printf("Headers[X-Plus-Suffix]: %s\n", Headers["X-Plus-Suffix"])
-				if Headers["X-Plus-Suffix"] != "" {
-					log.Println("BEGIN parseForwardedBody")
-				} else {
-					scanComplete = true
-				}
-			}
-		} else {
-			done, err := parseForwardedBodyLine(line)
-			cobra.CheckErr(err)
-			if done {
-				log.Println("END parseForwardedBody")
-				scanComplete = true
-				forwardTo, forwardFrom, err = checkForwardHeaders()
-				cobra.CheckErr(err)
-			}
-		}
-
-		if scanComplete {
-			break
-		}
-
-	}
-
-	if viper.GetBool("verbose") {
-		log.Println("END-MESSAGE")
-	}
-
-	printHeaders("message", &Headers)
-	printHeaders("forward", &ForwardHeaders)
+	m, err := mail.CreateReader(input)
+	cobra.CheckErr(err)
+	printHeaders("message", &m.Header)
+	sender, username := checkSender(m.Header)
+	checkDKIM(m.Header)
+	recipient, suffix := checkRecipient(m.Header)
+	checkReceived(m.Header, username, suffix)
 
 	if viper.GetBool("verbose") {
 		log.Println("BEGIN-ID")
 		log.Printf("Hostname: %s\n", Hostname)
-		log.Printf("Username: %s\n", Username)
 		log.Printf("Domains: %v\n", Domains)
-		log.Printf("Sender: %s\n", Sender)
-		log.Printf("To: %s\n", Headers["To"])
-		log.Printf("Suffix: %s\n", Headers["X-Plus-Suffix"])
+		log.Printf("Username: %s\n", username)
+		log.Printf("From: %s\n", sender)
+		log.Printf("To: %s\n", recipient)
+		log.Printf("Suffix: %s\n", suffix)
 		log.Println("END-ID")
 	}
 
-	var args []string
-	if Headers["X-Plus-Suffix"] != "" {
-		// plus suffix was used
-		if forwardTo == "" {
-			return fmt.Errorf("plus-suffix is only valid with forwarded messages")
-		}
-		book := strings.TrimPrefix(Headers["X-Plus-Suffix"], "+")
-		if book == "" {
-			return fmt.Errorf("null plus-suffix address book")
-		}
-		address := forwardFrom
-		if address == "" {
-			return fmt.Errorf("plus-suffix forwarded from address not found")
-		}
-		args = []string{"add", book, address}
-	} else {
-		// this is a command message
-		subject := strings.TrimSpace(Headers["Subject"])
-		if subject == "" {
-			subject = "help"
-		}
-		args = strings.Split(subject, " ")
+	if suffix != "" {
+		return handleForwardedMessage(m, sender, suffix)
 	}
-	return ExecuteCommand(args)
+	return handleCommandMessage(m, sender)
 }
 
-func printHeaders(name string, headers *map[string]string) {
+func handleForwardedMessage(m *mail.Reader, sender, suffix string) error {
+
+	address := parseForwardedBody(m, suffix)
+
+	if address == "" {
+		return fmt.Errorf("plus-suffix forwarded from address not found")
+	}
+	args := []string{"add", suffix, address}
+	log.Printf("handleForwardedMessage: %v", args)
+	return ExecuteCommand(sender, args)
+}
+
+func handleCommandMessage(m *mail.Reader, sender string) error {
+	subject, err := m.Header.Subject()
+	cobra.CheckErr(err)
+	if subject == "" {
+		subject = "help"
+	}
+	return ExecuteCommand(sender, strings.Split(subject, " "))
+}
+
+func printHeaders(name string, header *mail.Header) {
 	if viper.GetBool("verbose") {
-		log.Printf("BEGIN-HEADERS[%s]", name)
-		for header, value := range *headers {
-			log.Printf("[%s] %s\n", header, value)
+		log.Printf("BEGIN-HEADERS[%s]\n", name)
+		fields := header.Fields()
+		for fields.Next() {
+			log.Printf("[%s] %s\n", fields.Key(), fields.Value())
 		}
-		log.Printf("END-HEADERS[%s]", name)
+		log.Printf("END-HEADERS[%s]\n", name)
 	}
 }
 
-func parseHeaderLine(line string, forward bool) (bool, error) {
+func checkDKIM(header mail.Header) {
 
-	headers := &Headers
-	if forward {
-		// in forwarded body, save to ForwardHeaders
-		headers = &ForwardHeaders
-	}
-
-	// blank line terminates headers
-	if len(strings.TrimSpace(line)) == 0 {
-		return true, nil
-	}
-
-	isHeader, err := regexp.MatchString(`^[a-zA-Z0-9]`, line)
-	if err != nil {
-		return true, err
-	}
-	if !isHeader {
-		if LastHeader != "" {
-			(*headers)[LastHeader] = (*headers)[LastHeader] + " " + strings.TrimSpace(line)
+	fields := header.FieldsByKey("Dkim-Signature")
+	signature := ""
+	for fields.Next() {
+		if signature != "" {
+			log.Fatal("multiple DKIM signatures detected")
 		}
-		return false, nil
+		signature = fields.Value()
 	}
-	matches := HEADER_PATTERN.FindStringSubmatch(line)
-	if len(matches) == 3 {
-		name := matches[1]
-		value := matches[2]
-		LastHeader = name
-		(*headers)[name] = value
-		if !forward {
-			// if not in forwarded body headers, count Received lines
-			if name == "Received" {
-				ReceivedCount++
-			}
-		}
-		return false, nil
-	}
-	return true, fmt.Errorf("failed to parse: %s", line)
-}
-
-func parseForwardedBodyLine(line string) (bool, error) {
-	if FORWARDED_PATTERN.MatchString(line) {
-		// skip until we find the forwarded marker
-		ForwardHeaders["X-Forwarded-Marker"] = strings.TrimSpace(line)
-		return false, nil
+	if signature == "" {
+		log.Fatal("missing DKIM signature")
 	}
 
-	if ForwardHeaders["X-Forwarded-Marker"] != "" {
-		// parse headers following the marker
-		return parseHeaderLine(line, true)
-	}
-	return false, nil
-}
-
-func checkForwardHeaders() (string, string, error) {
-	var to, from string
-	line, ok := ForwardHeaders["To"]
-	if ok {
-		matches := EMAIL_ADDRESS_PATTERN.FindStringSubmatch(line)
-		if len(matches) > 2 {
-			to = fmt.Sprintf("%s@%s", matches[1], matches[2])
-		}
-	}
-	line, ok = ForwardHeaders["From"]
-	if ok {
-		matches := EMAIL_ADDRESS_PATTERN.FindStringSubmatch(line)
-		if len(matches) > 2 {
-			from = fmt.Sprintf("%s@%s", matches[1], matches[2])
-		}
-
-	}
-
-	if to == "" {
-		return "", "", fmt.Errorf("missing forwarded To header")
-	}
-
-	if from == "" {
-		return "", "", fmt.Errorf("missing forwarded From header")
-	}
-
-	return to, from, nil
-}
-
-func checkHeaders() error {
-	err := checkDKIM()
-	if err != nil {
-		return err
-	}
-	err = checkSender()
-	if err != nil {
-		return err
-	}
-	err = checkReceived()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func checkDKIM() error {
-
-	dkim, ok := Headers["DKIM-Signature"]
-	if !ok {
-		return errors.New("missing DKIM signature")
-	}
-	for _, field := range strings.Split(dkim, ";") {
+	for _, field := range strings.Split(signature, ";") {
 		field = strings.TrimSpace(field)
 		matches := DKIM_DOMAIN_PATTERN.FindStringSubmatch(field)
 		if len(matches) == 2 {
 			for _, domain := range Domains {
 				if matches[1] == domain {
-					return nil
+					return
 				}
 			}
 		}
 	}
-	return errors.New("domain not found in DKIM Signature")
+	log.Fatal("domain not found in DKIM Signature")
 }
 
-func checkReceived() error {
-	if ReceivedCount != 1 {
-		return fmt.Errorf("Received: bad count; expected 1,  got %d", ReceivedCount)
+// verify single received line, matching username and plus-suffix
+func checkReceived(header mail.Header, username, suffix string) {
+
+	fields := header.FieldsByKey("Received")
+	received := ""
+	for fields.Next() {
+		if received != "" {
+			log.Fatal("multiple Received headers detected")
+		}
+		received = fields.Value()
 	}
-	received, ok := Headers["Received"]
-	if !ok {
-		return errors.New("Received: missing header")
+	if received == "" {
+		log.Fatal("missing Received header")
 	}
+
 	matches := RECEIVED_PATTERN.FindStringSubmatch(received)
-	for i, match := range matches {
-		log.Printf("match[%d] '%s'\n", i, match)
-	}
+	/*
+		for i, match := range matches {
+			log.Printf("match[%d] '%s'\n", i, match)
+		}
+	*/
 	if len(matches) != 5 {
-		return errors.New("Received: parse failed")
+		log.Fatalf("Received: parse failed: %s", received)
 	}
 	rxHostname := matches[1]
 	rxUsername := matches[2]
-	Headers["X-Plus-Suffix"] = matches[3]
+	rxSuffix := matches[3]
 	rxDomain := matches[4]
 
+	rxSuffix = strings.TrimPrefix(rxSuffix, "+")
+
 	if rxHostname != Hostname {
-		return fmt.Errorf("Received: hostname mismatch; expected %s, got %s", Hostname, rxHostname)
+		log.Fatalf("Received: hostname mismatch; expected %s, got %s", Hostname, rxHostname)
 	}
 
-	if rxUsername != Username {
-		return fmt.Errorf("Received: user mismatch; expected %s, got %s", Username, rxUsername)
+	if rxUsername != username {
+		log.Fatalf("Received: user mismatch; expected %s, got %s", username, rxUsername)
 	}
+
+	if rxSuffix != suffix {
+		log.Fatalf("Received: suffix mismatch; expected %s, got %s", suffix, rxSuffix)
+	}
+
 	for _, domain := range Domains {
 		if rxDomain == domain {
-			return nil
+			return
 		}
 	}
-	return fmt.Errorf("Received: invalid domain: %s", rxDomain)
+	log.Fatalf("Received: invalid domain: %s", rxDomain)
 }
 
-func checkSender() error {
-	fromLine, ok := Headers["From"]
-	if !ok {
-		return errors.New("From: missing header")
+// return fromAddress, username
+func checkSender(header mail.Header) (string, string) {
+	addrs, err := header.AddressList("From")
+	cobra.CheckErr(err)
+	if len(addrs) == 0 {
+		log.Fatal("missing From: address header")
 	}
-	matches := EMAIL_ADDRESS_PATTERN.FindStringSubmatch(fromLine)
-	if len(matches) != 3 {
-		return errors.New("From: parse failed")
+	if len(addrs) != 1 {
+		log.Fatal("From: multiple addresses not allowed")
 	}
-	fromUser := matches[1]
-	fromDomain := matches[2]
+	address := addrs[0].Address
+	parts := strings.Split(address, "@")
+	if len(parts) != 2 {
+		log.Fatalf("From: unexpected format: %v", addrs)
+	}
+	username := parts[0]
+	domain := parts[1]
 
-	_, err := user.Lookup(fromUser)
+	_, err = user.Lookup(username)
 	if err != nil {
-		return fmt.Errorf("From: invalid user: %s", fromUser)
+		log.Fatalf("From: invalid user: %s", username)
 	}
 
-	Username = fromUser
-
-	for _, domain := range Domains {
-		if domain == fromDomain {
-			Sender = fromUser + "@" + fromDomain
-			return nil
+	for _, d := range Domains {
+		if domain == d {
+			return address, username
 		}
 	}
-	return fmt.Errorf("From: invalid domain: %s", fromDomain)
+	log.Fatalf("From: invalid domain: %s", domain)
+	return "", ""
+}
+
+// return toAddress, plus-suffix
+func checkRecipient(header mail.Header) (string, string) {
+	addrs, err := header.AddressList("To")
+	cobra.CheckErr(err)
+	if len(addrs) == 0 {
+		log.Fatal("missing To: address header")
+	}
+	if len(addrs) != 1 {
+		log.Fatal("To: multiple addresses not allowed")
+	}
+	address := addrs[0].Address
+	user, _, found := strings.Cut(address, "@")
+	if !found {
+		log.Fatalf("To: unexpected format: %v", addrs)
+	}
+	_, suffix, _ := strings.Cut(user, "+")
+	return address, suffix
+}
+
+func parseForwardedBody(m *mail.Reader, suffix string) string {
+	for {
+		p, err := m.NextPart()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			log.Fatalf("failure parsing forwarded body: %v", err)
+		}
+		//log.Printf("PART: %+v\n", p)
+		switch h := p.Header.(type) {
+		case *mail.InlineHeader:
+			fromValue := h.Get("From")
+			if fromValue != "" {
+				addr, err := mail.ParseAddress(fromValue)
+				if err != nil {
+					log.Fatalf("failed parsing forwarded body part From header: %s", fromValue)
+				}
+				if viper.GetBool("verbose") {
+					log.Printf("Found From address in forwarded body part InlineHeader: %s\n", addr.Address)
+				}
+				return addr.Address
+			}
+			value := h.Get("Content-Type")
+			contentType, _, _ := strings.Cut(value, ";")
+			switch contentType {
+			case "text/plain":
+				from := scanTextBody(p.Body)
+				if from != "" {
+					return from
+				}
+			case "text/html":
+				from := scanHTMLBody(p.Body)
+				if from != "" {
+					return from
+				}
+			default:
+				log.Printf("Warning: unexpected Content-Type: %s\n", contentType)
+			}
+		default:
+			log.Printf("Warning: unexpected forwarded body part header: %v\n", h)
+
+		}
+	}
+	log.Fatal("failed to locate From address in forwarded body")
+	return ""
+}
+
+func scanTextBody(body io.Reader) string {
+	scanner := bufio.NewScanner(body)
+	count := 0
+	marker := false
+	buf := bytes.Buffer{}
+	for scanner.Scan() {
+		line := scanner.Text()
+		if viper.GetBool("verbose") {
+			log.Printf("text[%d]: %s\n", count, line)
+		}
+		count += 1
+		if FORWARDED_PATTERN.MatchString(line) {
+			marker = true
+			continue
+		}
+		if marker {
+			if strings.TrimSpace(line) == "" {
+				break
+			}
+			_, err := buf.WriteString(line + "\n")
+			if err != nil {
+				log.Fatalf("failed writing to buffer: %v", err)
+			}
+		}
+	}
+	if marker {
+		m, err := mail.CreateReader(&buf)
+		if err != nil {
+			log.Printf("Warning: failed reading forwarded text body as message: %v", err)
+			return ""
+		}
+		//log.Printf("part_message: %+v", m)
+		addrs, err := m.Header.AddressList("From")
+		if err != nil {
+			log.Fatalf("failed reading forwarded text body From: %v", err)
+		}
+		for _, addr := range addrs {
+			if viper.GetBool("verbose") {
+				log.Printf("Using From address from reparsed text body headers: %s\n", addr.Address)
+			}
+			return addr.Address
+		}
+	}
+	return ""
+}
+
+func scanHTMLBody(body io.Reader) string {
+	scanner := bufio.NewScanner(body)
+	count := 0
+	marker := false
+	table := false
+	from := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		if viper.GetBool("verbose") {
+			log.Printf("html[%d]: %s\n", count, line)
+		}
+		count += 1
+		if !marker {
+			// loop until marker is found
+			if FORWARDED_PATTERN.MatchString(line) {
+				marker = true
+			}
+			continue
+		}
+		if !table {
+			// loop until table is found
+			if MOZ_HEADERS_TABLE_BEGIN_PATTERN.MatchString(line) {
+				//log.Printf("found table start: %s\n", line)
+				table = true
+			}
+			continue
+		}
+		match := MOZ_HEADERS_TABLE_HEADER_PATTERN.FindStringSubmatch(line)
+		if len(match) == 2 {
+			//log.Printf("found row: %s\n", match[1])
+			if match[1] == "From" {
+				from = true
+			} else {
+				from = false
+			}
+			continue
+		}
+		if from {
+			// we've passed the from row, look for the address link
+			match := MOZ_HEADERS_TABLE_ADDRESS_PATTERN.FindStringSubmatch(line)
+			if len(match) == 2 {
+				if viper.GetBool("verbose") {
+					log.Printf("Parsed From address from html moz-email-headers table: %s\n", match[1])
+				}
+				return match[1]
+			}
+		}
+		if MOZ_HEADERS_TABLE_END_PATTERN.MatchString(line) {
+			//log.Printf("found table end: %s\n", line)
+			// we failed to detect a from address, bail out
+			return ""
+		}
+	}
+	return ""
 }

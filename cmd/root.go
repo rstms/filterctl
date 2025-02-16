@@ -47,7 +47,6 @@ const Version = "1.0.3"
 var Hostname string
 var Username string
 var Domains []string
-var Sender string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -234,9 +233,9 @@ func LogLines(label string, buf []byte) {
 	}
 }
 
-func ExecuteCommand(args []string) error {
+func ExecuteCommand(sender string, args []string) error {
 	if viper.GetBool("verbose") {
-		log.Printf("sender=%s command=%s args=%v\n", Sender, os.Args[0], args)
+		log.Printf("sender=%s command=%s args=%v\n", sender, os.Args[0], args)
 	}
 	if viper.GetBool("disable_exec") {
 		return nil
@@ -245,7 +244,7 @@ func ExecuteCommand(args []string) error {
 	if args[0] == "help" {
 		args[0] = "usage"
 	}
-	viper.Set("sender", Sender)
+	viper.Set("sender", sender)
 	//args = append([]string{"--sender", Sender}, args...)
 	cmd := exec.Command(os.Args[0], args...)
 
@@ -278,7 +277,7 @@ func ExecuteCommand(args []string) error {
 	if err != nil || exitCode != 0 || len(stderr) > 0 {
 		fail := map[string]any{
 			"Success": false,
-			"Message": fmt.Sprintf("%s internal failure", Sender),
+			"Message": fmt.Sprintf("%s internal failure", sender),
 			"Help":    "Send 'help' in Subject line for valid commands",
 		}
 		if viper.GetBool("verbose") {
@@ -304,7 +303,7 @@ func ExecuteCommand(args []string) error {
 	}
 
 	// generate RFC2822 email message
-	message, err := formatEmailMessage("filterctl response", Sender, "filterctl@"+Domains[0], stdout)
+	message, err := formatEmailMessage("filterctl response", sender, "filterctl@"+Domains[0], stdout)
 	if err != nil {
 		return err
 	}
@@ -318,7 +317,7 @@ func ExecuteCommand(args []string) error {
 		return nil
 	}
 
-	sendmail := exec.Command("sendmail", Sender)
+	sendmail := exec.Command("sendmail", sender)
 	sendmail.Stdin = bytes.NewBuffer(message)
 	exitCode, stdout, stderr, err = run(sendmail)
 	if err != nil {

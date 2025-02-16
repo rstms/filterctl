@@ -28,6 +28,8 @@ func TestMessages(t *testing.T) {
 		{"nobody", true},
 		{"nosubject", true},
 		{"suffix", true},
+		{"forwarded", true},
+		{"forwarded2", true},
 	}
 	for _, c := range cases {
 		t.Run(c.Name, func(t *testing.T) {

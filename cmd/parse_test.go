@@ -27,11 +27,4 @@ func TestParseFile(t *testing.T) {
 
 	err = ParseFile(input)
 	require.Nil(t, err)
-
-	headerLen := len(Headers)
-	require.Greater(t, headerLen, 1)
-
-	subject, ok := Headers["Subject"]
-	require.NotNil(t, ok)
-	require.NotNil(t, subject)
 }

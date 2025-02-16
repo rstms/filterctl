@@ -3,6 +3,7 @@ module github.com/rstms/filterctl
 go 1.22.1
 
 require (
+	github.com/emersion/go-message v0.18.2
 	github.com/rstms/rspamd-classes v1.0.2
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/viper v1.19.0
