@@ -172,39 +172,43 @@ func initConfig() {
 }
 
 func InitIdentity() error {
-	hostname, err := os.Hostname()
-	if err != nil {
-		return err
-	}
-	addrs, err := net.LookupHost(hostname)
-	if err != nil {
-		return err
-	}
-	pattern, err := regexp.Compile(`^([a-z][a-z]*)\.([a-z\.]*)\.$`)
-	if err != nil {
-		return err
-	}
-	for _, addr := range addrs {
-		names, err := net.LookupAddr(addr)
+	Hostname = viper.GetString("hostname")
+	Domains = viper.GetStringSlice("domains")
+	if Hostname == "" {
+		hostname, err := os.Hostname()
 		if err != nil {
 			return err
 		}
-		if len(names) != 1 {
-			return errors.New(fmt.Sprintf("unexpected multiple names returned for %s", addr))
+		addrs, err := net.LookupHost(hostname)
+		if err != nil {
+			return err
 		}
-		matches := pattern.FindStringSubmatch(names[0])
-		if len(matches) != 3 {
-			return errors.New(fmt.Sprintf("unexpected domain format: %s", names[0]))
+		pattern, err := regexp.Compile(`^([a-z][a-z]*)\.([a-z\.]*)\.$`)
+		if err != nil {
+			return err
 		}
-		host := matches[1]
-		domain := matches[2]
-		if viper.GetBool("verbose") {
-			log.Printf("addr=%s hostname=%s host=%s domain=%s\n", addr, hostname, host, domain)
+		for _, addr := range addrs {
+			names, err := net.LookupAddr(addr)
+			if err != nil {
+				return err
+			}
+			if len(names) != 1 {
+				return errors.New(fmt.Sprintf("unexpected multiple names returned for %s", addr))
+			}
+			matches := pattern.FindStringSubmatch(names[0])
+			if len(matches) != 3 {
+				return errors.New(fmt.Sprintf("unexpected domain format: %s", names[0]))
+			}
+			host := matches[1]
+			domain := matches[2]
+			if viper.GetBool("verbose") {
+				log.Printf("addr=%s hostname=%s host=%s domain=%s\n", addr, hostname, host, domain)
+			}
+			if Hostname == "" {
+				Hostname = host + "." + domain
+			}
+			Domains = append(Domains, domain)
 		}
-		if Hostname == "" {
-			Hostname = host + "." + domain
-		}
-		Domains = append(Domains, domain)
 	}
 	if Hostname == "" {
 		return errors.New("failed to set Hostname")

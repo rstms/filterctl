@@ -14,8 +14,9 @@ blah blah blah
 -------- Forwarded Message --------
 Subject:       test5560
 Date:  Fri, 14 Feb 2025 14:43:12 -0700 (MST)
-From:  test@bootnotice.com
-To:    test@mailcapsule.io
+From:  blah blah 
+    <test@bootnotice.com>
+To:    <test@mailcapsule.io>
 
 original body line one
 original body line two

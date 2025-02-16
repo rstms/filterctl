@@ -1,4 +1,7 @@
 disable_response: true
+hostname: phobos.rstms.net
+domains:
+  - rstms.net
 verbose: true
 debug: true
 url: http://127.0.0.1:2016

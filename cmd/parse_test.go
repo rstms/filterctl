@@ -4,19 +4,20 @@ import (
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"os"
-	"strings"
 	"testing"
 )
+
+var testFQDN = "phobos.rstms.net"
+var testDomains = []string{"rstms.net"}
 
 func TestInitIdentity(t *testing.T) {
 	viper.Set("disable_response", true)
 	viper.Set("disable_exec", true)
 	viper.Set("verbose", true)
+	viper.Set("hostname", testFQDN)
+	viper.Set("domains", testDomains)
 	require.Nil(t, InitIdentity())
-	data, err := os.ReadFile("testdata/fqdn")
-	require.Nil(t, err)
-	fqdn := strings.TrimSpace(string(data))
-	require.Equal(t, Hostname, fqdn)
+	require.Equal(t, Hostname, testFQDN)
 }
 
 func TestParseFile(t *testing.T) {

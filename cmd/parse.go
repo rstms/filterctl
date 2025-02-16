@@ -36,16 +36,15 @@ import (
 
 var HEADER_PATTERN = regexp.MustCompile(`^([a-zA-Z _-]*): (.*)$`)
 var RECEIVED_PATTERN = regexp.MustCompile(`^from .* by ([a-z][a-z\.]*) \(OpenSMTPD\) with ESMTPSA .* auth=yes user=([a-z][a-z_-]*) for <filterctl(\+[a-zA-Z_-]+){0,1}@([a-z][a-z\.]*)>.*$`)
-var FROM_PATTERN = regexp.MustCompile(`^.* <([a-z][a-z_-]*)@([a-z][a-z\.]*)>$`)
+var EMAIL_ADDRESS_PATTERN = regexp.MustCompile(`^.* <([a-z][a-z_-]*)@([a-z][a-z\.]*)>$`)
 var DKIM_DOMAIN_PATTERN = regexp.MustCompile(`d=([a-z\.]*)$`)
 var FORWARDED_PATTERN = regexp.MustCompile(`.*----- Forwarded Message -----.*`)
-var FORWARDED_FROM_PATTERN = regexp.MustCompile(`^\s*From:\s+(\S+)\s*$`)
-var FORWARDED_TO_PATTERN = regexp.MustCompile(`^\s*To:\s+(\S+)\s*$`)
 
 /*
  */
 
 var Headers map[string]string
+var ForwardHeaders map[string]string
 var LastHeader string
 var ReceivedCount int
 var PlusSuffix string
@@ -78,7 +77,9 @@ func ParseFile(input *os.File) error {
 	if viper.GetBool("verbose") {
 		log.Println("BEGIN-MESSAGE")
 	}
+	var forwardTo, forwardFrom string
 	Headers = make(map[string]string)
+	ForwardHeaders = make(map[string]string)
 	ReceivedCount = 0
 	lineCount := 0
 	scanner := bufio.NewScanner(input)
@@ -93,7 +94,7 @@ func ParseFile(input *os.File) error {
 		lineCount += 1
 
 		if inHeader {
-			err, done := parseHeaderLine(line)
+			done, err := parseHeaderLine(line, false)
 			cobra.CheckErr(err)
 			if done {
 				inHeader = false
@@ -103,17 +104,19 @@ func ParseFile(input *os.File) error {
 				log.Printf("Headers[To]: %s\n", Headers["To"])
 				log.Printf("Headers[X-Plus-Suffix]: %s\n", Headers["X-Plus-Suffix"])
 				if Headers["X-Plus-Suffix"] != "" {
-					log.Println("BEGIN parseBody")
+					log.Println("BEGIN parseForwardedBody")
 				} else {
 					scanComplete = true
 				}
 			}
 		} else {
-			err, done := parseBodyLine(line)
+			done, err := parseForwardedBodyLine(line)
 			cobra.CheckErr(err)
 			if done {
-				log.Println("END parseBody")
+				log.Println("END parseForwardedBody")
 				scanComplete = true
+				forwardTo, forwardFrom, err = checkForwardHeaders()
+				cobra.CheckErr(err)
 			}
 		}
 
@@ -127,7 +130,8 @@ func ParseFile(input *os.File) error {
 		log.Println("END-MESSAGE")
 	}
 
-	printHeaders()
+	printHeaders("message", &Headers)
+	printHeaders("forward", &ForwardHeaders)
 
 	if viper.GetBool("verbose") {
 		log.Println("BEGIN-ID")
@@ -142,17 +146,21 @@ func ParseFile(input *os.File) error {
 
 	var args []string
 	if Headers["X-Plus-Suffix"] != "" {
+		// plus suffix was used
+		if forwardTo == "" {
+			return fmt.Errorf("plus-suffix is only valid with forwarded messages")
+		}
 		book := strings.TrimPrefix(Headers["X-Plus-Suffix"], "+")
 		if book == "" {
 			return fmt.Errorf("null plus-suffix address book")
 		}
-		address := strings.TrimSpace(Headers["X-Forwarded-From"])
+		address := forwardFrom
 		if address == "" {
 			return fmt.Errorf("plus-suffix forwarded from address not found")
 		}
-
 		args = []string{"add", book, address}
 	} else {
+		// this is a command message
 		subject := strings.TrimSpace(Headers["Subject"])
 		if subject == "" {
 			subject = "help"
@@ -162,70 +170,97 @@ func ParseFile(input *os.File) error {
 	return ExecuteCommand(args)
 }
 
-func printHeaders() {
+func printHeaders(name string, headers *map[string]string) {
 	if viper.GetBool("verbose") {
-		log.Println("BEGIN-HEADERS")
-		for header, value := range Headers {
+		log.Printf("BEGIN-HEADERS[%s]", name)
+		for header, value := range *headers {
 			log.Printf("[%s] %s\n", header, value)
 		}
-		log.Println("END-HEADERS")
+		log.Printf("END-HEADERS[%s]", name)
 	}
 }
 
-func parseHeaderLine(line string) (error, bool) {
+func parseHeaderLine(line string, forward bool) (bool, error) {
+
+	headers := &Headers
+	if forward {
+		// in forwarded body, save to ForwardHeaders
+		headers = &ForwardHeaders
+	}
 
 	// blank line terminates headers
 	if len(strings.TrimSpace(line)) == 0 {
-		return nil, true
+		return true, nil
 	}
 
 	isHeader, err := regexp.MatchString(`^[a-zA-Z0-9]`, line)
 	if err != nil {
-		return err, true
+		return true, err
 	}
 	if !isHeader {
 		if LastHeader != "" {
-			Headers[LastHeader] = Headers[LastHeader] + " " + strings.TrimSpace(line)
+			(*headers)[LastHeader] = (*headers)[LastHeader] + " " + strings.TrimSpace(line)
 		}
-		return nil, false
+		return false, nil
 	}
 	matches := HEADER_PATTERN.FindStringSubmatch(line)
 	if len(matches) == 3 {
 		name := matches[1]
 		value := matches[2]
 		LastHeader = name
-		Headers[name] = value
-		if name == "Received" {
-			ReceivedCount++
+		(*headers)[name] = value
+		if !forward {
+			// if not in forwarded body headers, count Received lines
+			if name == "Received" {
+				ReceivedCount++
+			}
 		}
-		return nil, false
+		return false, nil
 	}
-	return fmt.Errorf("failed to parse: %s", line), true
+	return true, fmt.Errorf("failed to parse: %s", line)
 }
 
-func parseBodyLine(line string) (error, bool) {
+func parseForwardedBodyLine(line string) (bool, error) {
 	if FORWARDED_PATTERN.MatchString(line) {
-		Headers["X-Forwarded-Marker"] = strings.TrimSpace(line)
-		return nil, false
+		// skip until we find the forwarded marker
+		ForwardHeaders["X-Forwarded-Marker"] = strings.TrimSpace(line)
+		return false, nil
 	}
 
-	if Headers["X-Forwarded-Marker"] != "" {
+	if ForwardHeaders["X-Forwarded-Marker"] != "" {
+		// parse headers following the marker
+		return parseHeaderLine(line, true)
+	}
+	return false, nil
+}
 
-		toMatches := FORWARDED_TO_PATTERN.FindStringSubmatch(line)
-		if len(toMatches) > 1 {
-			Headers["X-Forwarded-To"] = toMatches[1]
-		}
-
-		fromMatches := FORWARDED_FROM_PATTERN.FindStringSubmatch(line)
-		if len(fromMatches) > 1 {
-			Headers["X-Forwarded-From"] = fromMatches[1]
-		}
-
-		if Headers["X-Forwarded-From"] != "" && Headers["X-Forwarded-To"] != "" {
-			return nil, true
+func checkForwardHeaders() (string, string, error) {
+	var to, from string
+	line, ok := ForwardHeaders["To"]
+	if ok {
+		matches := EMAIL_ADDRESS_PATTERN.FindStringSubmatch(line)
+		if len(matches) > 2 {
+			to = fmt.Sprintf("%s@%s", matches[1], matches[2])
 		}
 	}
-	return nil, false
+	line, ok = ForwardHeaders["From"]
+	if ok {
+		matches := EMAIL_ADDRESS_PATTERN.FindStringSubmatch(line)
+		if len(matches) > 2 {
+			from = fmt.Sprintf("%s@%s", matches[1], matches[2])
+		}
+
+	}
+
+	if to == "" {
+		return "", "", fmt.Errorf("missing forwarded To header")
+	}
+
+	if from == "" {
+		return "", "", fmt.Errorf("missing forwarded From header")
+	}
+
+	return to, from, nil
 }
 
 func checkHeaders() error {
@@ -304,7 +339,7 @@ func checkSender() error {
 	if !ok {
 		return errors.New("From: missing header")
 	}
-	matches := FROM_PATTERN.FindStringSubmatch(fromLine)
+	matches := EMAIL_ADDRESS_PATTERN.FindStringSubmatch(fromLine)
 	if len(matches) != 3 {
 		return errors.New("From: parse failed")
 	}

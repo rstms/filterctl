@@ -23,9 +23,9 @@ go.sum: go.mod
 install: build
 	go install
 
-test:
-	fix -- go test -failfast -v .
-	fix -- go test -failfast -v ./...
+test: build
+	go test -failfast -v .
+	go test -failfast -v ./...
 
 release:
 	@$(gitclean) || { [ -n "$(dirty)" ] && echo "allowing dirty release"; }
