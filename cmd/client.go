@@ -22,6 +22,7 @@ type APIClient struct {
 
 type APIResponse struct {
 	Success bool
+	Request string
 	Message string
 }
 
@@ -112,7 +113,7 @@ func (a *APIClient) request(method, path string, requestData, responseData inter
 			return "", fmt.Errorf("failed marshalling JSON body for %s request: %v", method, err)
 		}
 		if viper.GetBool("verbose") {
-			fmt.Printf("request: %s\n", string(requestBytes))
+			log.Printf("request: %s\n", string(requestBytes))
 		}
 		requestBuffer = bytes.NewBuffer(requestBytes)
 	}
