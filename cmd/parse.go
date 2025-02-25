@@ -38,14 +38,11 @@ import (
 	"strings"
 )
 
-// var HEADER_PATTERN = regexp.MustCompile(`^([a-zA-Z _-]*): (.*)$`)
-var RECEIVED_PATTERN = regexp.MustCompile(`^from .* by ([a-z][a-z\.]*) \(OpenSMTPD\) with ESMTPSA .* auth=yes user=([a-z][a-z_-]*) for <filterctl(\+[a-zA-Z_-]+){0,1}@([a-z][a-z\.]*)>.*$`)
+var RECEIVED_PATTERN = regexp.MustCompile(`^from .* by ([a-z][a-z\.]*) \(OpenSMTPD\) with ESMTPSA .* auth=yes user=([a-z][a-z_-]*) for <filterctl\+*([^@]*)@([^>]+)>.*$`)
 
-// var EMAIL_ADDRESS_PATTERN = regexp.MustCompile(`^.* <([a-z][a-z_-]*)@([a-z][a-z\.]*)>$`)
 var DKIM_DOMAIN_PATTERN = regexp.MustCompile(`d=([a-z\.]*)$`)
 var FORWARDED_PATTERN = regexp.MustCompile(`.*----- Forwarded Message -----.*`)
 
-// var PLUS_SUFFIX_ADDRESS_PATTERN = regexp.MustCompile(`^.* <[a-z][a-z_-]+\+([a-z][a-z_-]+)@[a-z][a-z\.]*>$`)
 var MOZ_HEADERS_TABLE_BEGIN_PATTERN = regexp.MustCompile(`class="moz-email-headers-table"`)
 var MOZ_HEADERS_TABLE_HEADER_PATTERN = regexp.MustCompile(`<th [^>]*>([a-zA-Z]+): </th>`)
 var MOZ_HEADERS_TABLE_ADDRESS_PATTERN = regexp.MustCompile(`.*<a class="moz-txt-link.*" href="mailto:([^"]*)">[^<]*</a>.*`)
@@ -187,12 +184,16 @@ func checkReceived(header mail.Header, username, suffix string) {
 		log.Fatal("missing Received header")
 	}
 
+	//log.Printf("Received: %s\n", received)
 	matches := RECEIVED_PATTERN.FindStringSubmatch(received)
+	//log.Printf("Matches: %v\n", matches)
+
 	/*
 		for i, match := range matches {
 			log.Printf("match[%d] '%s'\n", i, match)
 		}
 	*/
+
 	if len(matches) != 5 {
 		log.Fatalf("Received: parse failed: %s", received)
 	}
