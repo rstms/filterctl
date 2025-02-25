@@ -29,7 +29,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// addCmd represents the mkaddr command
 var addCmd = &cobra.Command{
 	Use:   "add BOOK_NAME EMAIL_ADDRESS",
 	Short: "add email address to book",

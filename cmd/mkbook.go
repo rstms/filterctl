@@ -28,7 +28,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// mkbookCmd represents the mkbook command
 var mkbookCmd = &cobra.Command{
 	Use:   "mkbook NAME DESCRIPTION",
 	Short: "create a new address book",

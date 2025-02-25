@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/user"
@@ -75,7 +76,16 @@ func init() {
 	rootCmd.AddCommand(parseCmd)
 }
 
-func ParseFile(input *os.File) error {
+func ParseFile(input io.Reader) error {
+
+	if viper.GetBool("verbose") {
+		log.Println("BEGIN-INPUT")
+		content, err := ioutil.ReadAll(input)
+		cobra.CheckErr(err)
+		log.Print(string(content))
+		log.Println("END-INPUT")
+		input = bytes.NewBuffer(content)
+	}
 
 	m, err := mail.CreateReader(input)
 	cobra.CheckErr(err)

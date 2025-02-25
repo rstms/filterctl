@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-// deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete [CLASS, ...]",
 	Short: "delete rspamd classes",
