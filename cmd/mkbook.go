@@ -48,7 +48,7 @@ func init() {
 }
 
 func AddAddressBook(username, bookname, description string) (string, error) {
-	filterctld := initAPI()
+	filterctld := InitAPI()
 	type Request struct {
 		Username    string
 		Bookname    string

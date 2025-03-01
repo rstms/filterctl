@@ -38,7 +38,7 @@ All addresses in the address book are UNRECOVERABLY LOST.
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		filterctld := initAPI()
+		filterctld := InitAPI()
 		user := viper.GetString("sender")
 		token := args[0]
 		path := fmt.Sprintf("/filterctl/book/%s/%s/", user, token)

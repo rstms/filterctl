@@ -4,6 +4,6 @@ domains:
   - rstms.net
 verbose: true
 debug: true
-url: http://127.0.0.1:2016
+admin_url: http://127.0.0.1:2016
 log_file: stderr
 #log_file: testdata/filterctl.log

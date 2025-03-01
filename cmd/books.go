@@ -36,7 +36,7 @@ var booksCmd = &cobra.Command{
 Return a list of the sender's address books.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		filterctld := initAPI()
+		filterctld := InitAPI()
 		path := fmt.Sprintf("/filterctl/books/%s/", viper.GetString("sender"))
 		var response APIBooksResponse
 		ret, err := filterctld.Get(path, &response)

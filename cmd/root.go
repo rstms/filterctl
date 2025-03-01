@@ -351,7 +351,7 @@ func run(cmd *exec.Cmd) (int, []byte, []byte, error) {
 	return exitCode, oBuf.Bytes(), eBuf.Bytes(), nil
 }
 
-func initAPI() *APIClient {
+func InitAPI() *APIClient {
 	api, err := NewAPIClient()
 	cobra.CheckErr(err)
 	if viper.GetString("sender") == "" {

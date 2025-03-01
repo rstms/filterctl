@@ -37,7 +37,7 @@ Add an email address to the named address book
 `,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		filterctld := initAPI()
+		filterctld := InitAPI()
 		type Request struct {
 			Username string
 			Bookname string

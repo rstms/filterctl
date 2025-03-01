@@ -37,7 +37,7 @@ Return a list of address books containing the scanned ADDRESS"
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		filterctld := initAPI()
+		filterctld := InitAPI()
 		address := args[0]
 		var response APIBooksResponse
 		path := fmt.Sprintf("/filterctl/scan/%s/%s/", viper.GetString("sender"), address)

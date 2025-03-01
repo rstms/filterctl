@@ -36,7 +36,7 @@ var passwdCmd = &cobra.Command{
 Return address book password for sender
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		filterctld := initAPI()
+		filterctld := InitAPI()
 		var response APIPasswordResponse
 		path := fmt.Sprintf("/filterctl/passwd/%s/", viper.GetString("sender"))
 		text, err := filterctld.Get(path, &response)

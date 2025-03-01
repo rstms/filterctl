@@ -40,7 +40,7 @@ THRESHOLD is a floating point number.
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		api := initAPI()
+		api := InitAPI()
 		var response APIResponse
 		class := args[0]
 		matches := CLASS_PATTERN.FindStringSubmatch(class)

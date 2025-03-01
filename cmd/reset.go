@@ -43,7 +43,7 @@ the upper limit for each class.  Any number of classes may be defined.
 If no class specifications are provided, default values will be used.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := initAPI()
+		api := InitAPI()
 		var response APIClassesResponse
 
 		// delete current classes

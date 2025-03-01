@@ -10,7 +10,12 @@ import (
 var testFQDN = "phobos.rstms.net"
 var testDomains = []string{"rstms.net"}
 
-func TestInitIdentity(t *testing.T) {
+func configure(t *testing.T) {
+	viper.SetConfigType("yaml")
+	viper.AddConfigPath("testdata")
+	viper.SetConfigName("config")
+	err := viper.ReadInConfig()
+	require.Nil(t, err)
 	viper.Set("disable_response", true)
 	viper.Set("disable_exec", true)
 	viper.Set("verbose", true)
@@ -21,7 +26,9 @@ func TestInitIdentity(t *testing.T) {
 }
 
 func TestParseFile(t *testing.T) {
-	TestInitIdentity(t)
+	configure(t)
+
+	viper.Set("sender", "mkrueger@rstms.net")
 	input, err := os.Open("testdata/message")
 	require.Nil(t, err)
 
