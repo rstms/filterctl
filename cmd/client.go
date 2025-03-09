@@ -21,9 +21,10 @@ type APIClient struct {
 }
 
 type APIResponse struct {
-	Success bool
+	User    string
 	Request string
 	Message string
+	Success bool
 }
 
 type APIClassesResponse struct {
@@ -43,7 +44,7 @@ type APIBooksResponse struct {
 
 type APIAddressesResponse struct {
 	APIResponse
-	Addresses []string
+	Addresses []any
 }
 
 type APIPasswordResponse struct {

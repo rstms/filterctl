@@ -29,8 +29,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-var addCmd = &cobra.Command{
-	Use:   "add BOOK_NAME EMAIL_ADDRESS",
+var mkaddrCmd = &cobra.Command{
+	Use:   "mkaddr BOOK_NAME EMAIL_ADDRESS",
 	Short: "add email address to book",
 	Long: `
 Add an email address to the named address book
@@ -63,5 +63,5 @@ Add an email address to the named address book
 }
 
 func init() {
-	rootCmd.AddCommand(addCmd)
+	rootCmd.AddCommand(mkaddrCmd)
 }

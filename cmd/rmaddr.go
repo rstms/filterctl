@@ -28,42 +28,26 @@ import (
 	"github.com/spf13/viper"
 )
 
-var mkbookCmd = &cobra.Command{
-	Use:   "mkbook BOOK_NAME [DESCRIPTION]",
-	Short: "create a new address book",
+var rmaddrCmd = &cobra.Command{
+	Use:   "rmaddr BOOK_NAME EMAIL_ADDRESS",
+	Short: "delete email address from book",
 	Long: `
-Create a new address book under the sender's address with the NAME and DESCRIPTION.
-returns a data structure including the new book token and URI
+Delete an email address from the named address book.
 `,
-	Args: cobra.RangeArgs(1, 2),
+	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		bookName := args[0]
-		description := bookName
-		if len(args) > 1 {
-			description = args[1]
-		}
-		text, err := AddAddressBook(viper.GetString("sender"), bookName, description)
+		username := viper.GetString("sender")
+		bookname := args[0]
+		address := args[1]
+		filterctld := InitAPI()
+		var response APIResponse
+		path := fmt.Sprintf("/filterctl/address/%s/%s/%s/", username, bookname, address)
+		text, err := filterctld.Delete(path, &response)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(mkbookCmd)
-}
-
-func AddAddressBook(username, bookname, description string) (string, error) {
-	filterctld := InitAPI()
-	type Request struct {
-		Username    string
-		Bookname    string
-		Description string
-	}
-	request := Request{
-		Username:    username,
-		Bookname:    bookname,
-		Description: description,
-	}
-	var response APIResponse
-	return filterctld.Post("/filterctl/book/", &request, &response)
+	rootCmd.AddCommand(rmaddrCmd)
 }

@@ -30,10 +30,10 @@ import (
 
 // rmbookCmd represents the rmbook command
 var rmbookCmd = &cobra.Command{
-	Use:   "rmbook TOKEN",
+	Use:   "rmbook BOOK_NAME",
 	Short: "delete an address book",
 	Long: `
-Delete the address book of the sender address with the token matching TOKEN.  
+Delete the address book of the sender address matching BOOK_NAME.
 All addresses in the address book are UNRECOVERABLY LOST.
 `,
 	Args: cobra.ExactArgs(1),

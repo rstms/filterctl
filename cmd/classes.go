@@ -28,42 +28,23 @@ import (
 	"github.com/spf13/viper"
 )
 
-var mkbookCmd = &cobra.Command{
-	Use:   "mkbook BOOK_NAME [DESCRIPTION]",
-	Short: "create a new address book",
+var classesCmd = &cobra.Command{
+	Use:   "classes",
+	Short: "list rspamd classes",
 	Long: `
-Create a new address book under the sender's address with the NAME and DESCRIPTION.
-returns a data structure including the new book token and URI
+Return the complete set of rspamd class names and threshold values for the
+sender address.
 `,
-	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		bookName := args[0]
-		description := bookName
-		if len(args) > 1 {
-			description = args[1]
-		}
-		text, err := AddAddressBook(viper.GetString("sender"), bookName, description)
+		api := InitAPI()
+		var data APIClassesResponse
+		path := fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender"))
+		response, err := api.Get(path, &data)
 		cobra.CheckErr(err)
-		fmt.Println(text)
+		fmt.Println(response)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(mkbookCmd)
-}
-
-func AddAddressBook(username, bookname, description string) (string, error) {
-	filterctld := InitAPI()
-	type Request struct {
-		Username    string
-		Bookname    string
-		Description string
-	}
-	request := Request{
-		Username:    username,
-		Bookname:    bookname,
-		Description: description,
-	}
-	var response APIResponse
-	return filterctld.Post("/filterctl/book/", &request, &response)
+	rootCmd.AddCommand(classesCmd)
 }

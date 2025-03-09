@@ -3,5 +3,5 @@ admin_password: 4D06eqyU3PApfNXgmtp4NNEl
 api_key: ngsQnVKnvL9+v1+Hmcdh2cXu
 admin_url: https://capsodex.mailcapsule.io:4443/bcc
 dav_url: https://capsodex.mailcapsule.io/dav.php
-cert: testdata/test.pem
-key: testdata/test.key
+#cert: testdata/test.pem
+#key: testdata/test.key

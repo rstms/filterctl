@@ -28,23 +28,26 @@ import (
 	"github.com/spf13/viper"
 )
 
-var listCmd = &cobra.Command{
-	Use:   "list",
-	Short: "list rspamd classes",
+// mkbookCmd represents the mkbook command
+var addrsCmd = &cobra.Command{
+	Use:   "addrs BOOK_NAME",
+	Short: "list email addresses in address book",
 	Long: `
-Return the complete set of rspamd class names and threshold values for the
-sender address.
+Return the list of addresses contained by an address book
 `,
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		api := InitAPI()
-		var data APIClassesResponse
-		path := fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender"))
-		response, err := api.Get(path, &data)
+		username := viper.GetString("sender")
+		bookname := args[0]
+		filterctld := InitAPI()
+		var response APIAddressesResponse
+		path := fmt.Sprintf("/filterctl/addresses/%s/%s/", username, bookname)
+		ret, err := filterctld.Get(path, &response)
 		cobra.CheckErr(err)
-		fmt.Println(response)
+		fmt.Printf(ret)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(listCmd)
+	rootCmd.AddCommand(addrsCmd)
 }

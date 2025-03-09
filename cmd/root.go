@@ -155,11 +155,16 @@ func initConfig() {
 		home, err := os.UserHomeDir()
 		cobra.CheckErr(err)
 
+		config, err := os.UserConfigDir()
+		cobra.CheckErr(err)
+		userConfigPath := filepath.Join(config, "filterctl")
+
 		// Search config in home directory with name ".filterctl" (without extension).
 		viper.AddConfigPath(home)
+		viper.AddConfigPath(userConfigPath)
 		viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")
-		viper.SetConfigName(".filterctl")
+		viper.SetConfigName("filterctl")
 	}
 
 	viper.SetEnvPrefix("filterctl")

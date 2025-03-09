@@ -27,10 +27,13 @@ test: build
 	go test -failfast -v .
 	go test -failfast -v ./...
 
-release:
+release: build README.md
 	@$(gitclean) || { [ -n "$(dirty)" ] && echo "allowing dirty release"; }
 	@$(if $(update),gh release delete -y v$(version),)
 	gh release create v$(version) --notes "v$(version)"
+
+README.md:
+	filterctl usage | jq -r '.Help|.[]' >$@
 
 testclean:
 	rm -f testdata/*.out
@@ -45,3 +48,4 @@ sterile: clean
 	go clean -cache
 	go clean -modcache
 	rm -f go.mod go.sum
+	rm README.md
