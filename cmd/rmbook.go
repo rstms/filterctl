@@ -34,7 +34,7 @@ var rmbookCmd = &cobra.Command{
 	Short: "delete an address book",
 	Long: `
 Delete the address book of the sender address matching BOOK_NAME.
-All addresses in the address book are UNRECOVERABLY LOST.
+All addresses in the named address book are DELETED.
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

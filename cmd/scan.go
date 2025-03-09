@@ -33,7 +33,7 @@ var scanCmd = &cobra.Command{
 	Use:   "scan EMAIL_ADDRESS",
 	Short: "scan books for address",
 	Long: `
-Return a list of address books containing the scanned ADDRESS"
+Return a list of address books containing the scanned ADDRESS
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
