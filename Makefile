@@ -7,7 +7,7 @@ version != cat VERSION
 
 gitclean = if git status --porcelain | grep '^.*$$'; then echo git status is dirty; false; else echo git status is clean; true; fi
 
-build: fmt
+build: fmt 
 	fix go build
 
 fmt: go.sum
@@ -27,13 +27,14 @@ test: build
 	go test -failfast -v .
 	go test -failfast -v ./...
 
-release: build README.md
+release:
 	@$(gitclean) || { [ -n "$(dirty)" ] && echo "allowing dirty release"; }
 	@$(if $(update),gh release delete -y v$(version),)
 	gh release create v$(version) --notes "v$(version)"
 
-README.md:
-	filterctl usage | jq -r '.Help|.[]' >$@
+README.md: cmd/usage.go
+	echo "# filterctl\n" >$@
+	filterctl usage | jq -r '.Help|.[]' >>$@
 
 testclean:
 	rm -f testdata/*.out
