@@ -116,7 +116,7 @@ func handleForwardedMessage(m *mail.Reader, sender, suffix string) error {
 	if address == "" {
 		return fmt.Errorf("plus-suffix forwarded from address not found")
 	}
-	args := []string{"add", suffix, address}
+	args := []string{"mkaddr", suffix, address}
 	log.Printf("handleForwardedMessage: %v", args)
 	return ExecuteCommand(sender, args)
 }
