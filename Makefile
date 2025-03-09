@@ -34,7 +34,7 @@ release:
 
 README.md: cmd/usage.go
 	echo "# filterctl\n" >$@
-	filterctl usage | jq -r '.Help|.[]' >>$@
+	./filterctl usage | jq -r '.Help|.[]' >>$@
 
 testclean:
 	rm -f testdata/*.out
@@ -45,7 +45,7 @@ clean: testclean
 	go clean
 
 sterile: clean
-	go clean -r
+	go clean -r || true
 	go clean -cache
 	go clean -modcache
 	rm -f go.mod go.sum

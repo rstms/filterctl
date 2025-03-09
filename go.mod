@@ -1,6 +1,6 @@
 module github.com/rstms/filterctl
 
-go 1.22.5
+go 1.22.1
 
 require (
 	github.com/emersion/go-message v0.18.2
