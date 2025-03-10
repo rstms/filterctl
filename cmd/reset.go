@@ -71,7 +71,6 @@ If no class specifications are provided, default values will be used.
 			request.Classes[i].Score = float32(score)
 		}
 		var response APIClassesResponse
-		fmt.Printf("request: %+v\n", request)
 		text, err := api.Post("/filterctl/classes/", &request, &response)
 		cobra.CheckErr(err)
 		fmt.Println(text)
