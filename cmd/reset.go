@@ -26,6 +26,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/rstms/rspamd-classes/classes"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -44,36 +45,35 @@ If no class specifications are provided, default values will be used.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		api := InitAPI()
-		var response APIClassesResponse
-
-		// delete current classes
-		_, err := api.Delete(fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender")), &response)
-		cobra.CheckErr(err)
 
 		// if no args provided, generate from default config
-		if len(args) == 0 {
-			_, err := api.Get("/filterctl/classes/default/", &response)
-			cobra.CheckErr(err)
-			for _, class := range response.Classes {
-				args = append(args, fmt.Sprintf("%s=%f", class.Name, class.Score))
-			}
+		type Request struct {
+			Address string
+			Classes []classes.SpamClass
+		}
+		request := Request{
+			Address: viper.GetString("sender"),
+			Classes: make([]classes.SpamClass, len(args)),
 		}
 
-		for _, arg := range args {
+		for i, arg := range args {
 			matches := CLASS_PATTERN.FindStringSubmatch(arg)
 			if len(matches) != 3 {
 				cobra.CheckErr(fmt.Errorf("failed to parse class specifier '%s'", arg))
 			}
 			name := matches[1]
 			threshold := matches[2]
-			_, err := strconv.ParseFloat(threshold, 32)
+			score, err := strconv.ParseFloat(threshold, 32)
 			if err != nil {
 				cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", arg))
 			}
-			_, err = api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s/", viper.GetString("sender"), name, threshold), &response)
-			cobra.CheckErr(err)
+			request.Classes[i].Name = name
+			request.Classes[i].Score = float32(score)
 		}
-		text, err := api.Get(fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender")), &response)
+		var response APIClassesResponse
+		fmt.Printf("request: %+v\n", request)
+		text, err := api.Post("/filterctl/classes/", &request, &response)
+		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
 }
