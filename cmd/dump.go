@@ -23,54 +23,27 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
-var mkbookCmd = &cobra.Command{
-	Use:   "mkbook BOOK_NAME [DESCRIPTION]",
-	Short: "create a new address book",
+var dumpCmd = &cobra.Command{
+	Use:   "dump",
+	Short: "dump classes and carddav config",
 	Long: `
-Create a new address book under the sender's address with the NAME and DESCRIPTION.
-returns a data structure including the new book token and URI
+Return the full set of classes and address books for all users.
 `,
-	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {
-		bookName := args[0]
-		description := bookName
-		if len(args) > 1 {
-			description = args[1]
-		}
 		api := InitAPI()
-		text, err := AddAddressBook(api, viper.GetString("sender"), bookName, description)
+		var data APIDumpResponse
+		path := fmt.Sprintf("/filterctl/dump/%s/", viper.GetString("sender"))
+		text, err := api.Get(path, &data)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(mkbookCmd)
-}
-
-func AddAddressBook(api *APIClient, username, bookname, description string) (string, error) {
-	type Request struct {
-		Username    string
-		Bookname    string
-		Description string
-	}
-	request := Request{
-		Username:    username,
-		Bookname:    bookname,
-		Description: description,
-	}
-	var response APIResponse
-	result, err := api.Post("/filterctl/book/", &request, &response)
-	if err != nil {
-		return "", err
-	}
-	log.Printf("AddAddressBook: %s\n", result)
-	return result, nil
-
+	rootCmd.AddCommand(dumpCmd)
 }

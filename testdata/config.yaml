@@ -1,9 +1,11 @@
 disable_response: true
 hostname: phobos.rstms.net
-domains:
+domains: 
   - rstms.net
+admin_url: http://127.0.0.1:2016
 verbose: true
 debug: true
-admin_url: http://127.0.0.1:2016
 log_file: stderr
+cert: /etc/mabctl/mabctl.pem
+key: /etc/mabctl/mabctl.key
 #log_file: testdata/filterctl.log

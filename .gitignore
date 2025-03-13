@@ -9,3 +9,4 @@ testdata/*.out
 *.pem
 *.key
 *.core
+postactivate

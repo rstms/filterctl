@@ -23,6 +23,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -37,7 +38,7 @@ Add an email address to the named address book
 `,
 	Args: cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
-		filterctld := InitAPI()
+		api := InitAPI()
 		type Request struct {
 			Username string
 			Bookname string
@@ -50,18 +51,44 @@ Add an email address to the named address book
 			Address:  args[1],
 		}
 		var response APIResponse
-		text, err := filterctld.Post("/filterctl/address/", &request, &response)
-		cobra.CheckErr(err)
-		if strings.Contains(response.Message, "QueryAddressBook failed: 404 Not Found") {
-			_, err := AddAddressBook(request.Username, request.Bookname, "")
+		for {
+			text, err := api.Post("/filterctl/address/", &request, &response)
 			cobra.CheckErr(err)
-			text, err = filterctld.Post("/filterctl/address/", &request, &response)
-			cobra.CheckErr(err)
+			switch {
+			case strings.Contains(response.Message, "AddAddress failed: Unknown user:"):
+				_, err := AddUser(api, request.Username, "", "")
+				cobra.CheckErr(err)
+			case strings.Contains(response.Message, "QueryAddressBook failed: 404 Not Found"):
+				_, err := AddAddressBook(api, request.Username, request.Bookname, "")
+				cobra.CheckErr(err)
+			default:
+				fmt.Println(text)
+				return
+			}
 		}
-		fmt.Println(text)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(mkaddrCmd)
+}
+
+func AddUser(api *APIClient, username, email, password string) (string, error) {
+	type Request struct {
+		Username string
+		Email    string
+		Password string
+	}
+	request := Request{
+		Username: username,
+		Email:    email,
+		Password: password,
+	}
+	var response APIResponse
+	result, err := api.Post("/filterctl/user/", &request, &response)
+	if err != nil {
+		return "", err
+	}
+	log.Printf("AddUser: %s\n", result)
+	return result, nil
 }

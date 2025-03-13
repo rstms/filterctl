@@ -11,9 +11,7 @@ var testFQDN = "phobos.rstms.net"
 var testDomains = []string{"rstms.net"}
 
 func configure(t *testing.T) {
-	viper.SetConfigType("yaml")
-	viper.AddConfigPath("testdata")
-	viper.SetConfigName("config")
+	viper.SetConfigFile("testdata/config.yaml")
 	err := viper.ReadInConfig()
 	require.Nil(t, err)
 	viper.Set("disable_response", true)

@@ -9,8 +9,8 @@ import (
 )
 
 func TestScanCommand(t *testing.T) {
-	//err := InitIdentity()
-	//require.Nil(t, err)
+	err := InitIdentity()
+	require.Nil(t, err)
 	filterctld := InitAPI()
 	sender := "sender@example.org"
 	address := "address@example.org"

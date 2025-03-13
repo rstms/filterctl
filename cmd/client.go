@@ -11,6 +11,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/rstms/mabctl/api"
 	"github.com/rstms/rspamd-classes/classes"
 	"github.com/spf13/viper"
 )
@@ -50,6 +51,16 @@ type APIAddressesResponse struct {
 type APIPasswordResponse struct {
 	APIResponse
 	Password string
+}
+
+type APIDumpResponse struct {
+	APIResponse
+	Dump map[string]any
+}
+
+type APIRestoreRequest struct {
+	Username string
+	Dump     api.ConfigDump
 }
 
 func NewAPIClient() (*APIClient, error) {

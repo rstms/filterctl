@@ -34,6 +34,7 @@ import (
 	"log"
 	"os"
 	"os/user"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -56,9 +57,10 @@ var parseCmd = &cobra.Command{
 	Use:   "parse",
 	Short: "parse an email message",
 	Long: `
-Read an email message on stdin, scan headers, and execute the 'class' command.
-The subcommand is called with --sender set to the From address, and the
-subject line is passed as the rest of the command line.
+Read an email message on stdin, scan headers, and execute the command
+specified by the 'Subject' line.  The first word of the subject line
+specifies the command, and the following words are passed as command line
+arguments.  The subcommand is called with --sender set to the From address.
 Header information is used to authorize only locally generated messages.
 An email reply is generated containing the output of the command.
 If the program is called with no arguments, this subcommand is run by default, 
@@ -127,7 +129,18 @@ func handleCommandMessage(m *mail.Reader, sender string) error {
 	if subject == "" {
 		subject = "help"
 	}
-	return ExecuteCommand(sender, strings.Split(subject, " "))
+	fields := strings.Split(subject, " ")
+	if len(fields) > 0 {
+		if fields[0] == "restore" {
+			filename, err := parseRestoreBody(m)
+			if err != nil {
+				return err
+			}
+			fields = []string{"restore", filename}
+
+		}
+	}
+	return ExecuteCommand(sender, fields)
 }
 
 func printHeaders(name string, header *mail.Header) {
@@ -320,6 +333,49 @@ func parseForwardedBody(m *mail.Reader, suffix string) string {
 	}
 	log.Fatal("failed to locate From address in forwarded body")
 	return ""
+}
+
+func bodyFile(body string) (string, error) {
+	tmpFile, err := ioutil.TempFile(os.TempDir(), "filterctl-body-*")
+	if err != nil {
+		return "", err
+	}
+	_, err = tmpFile.Write([]byte(body))
+	if err != nil {
+		return "", err
+	}
+	return filepath.Abs(tmpFile.Name())
+}
+
+func parseRestoreBody(m *mail.Reader) (string, error) {
+	for {
+		p, err := m.NextPart()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return "", fmt.Errorf("failure parsing refresh body: %v", err)
+		}
+		//log.Printf("PART: %+v\n", p)
+		switch h := p.Header.(type) {
+		case *mail.InlineHeader:
+			value := h.Get("Content-Type")
+			contentType, _, _ := strings.Cut(value, ";")
+			switch contentType {
+			case "text/plain":
+				body := scanTextBody(p.Body)
+				return bodyFile(body)
+			case "text/html":
+				body := scanHTMLBody(p.Body)
+				return bodyFile(body)
+			default:
+				log.Printf("Warning: unexpected Content-Type: %s\n", contentType)
+			}
+		default:
+			log.Printf("Warning: unexpected forwarded body part header: %v\n", h)
+
+		}
+	}
+	return "", fmt.Errorf("failed to read restore body")
 }
 
 func scanTextBody(body io.Reader) string {

@@ -22,55 +22,55 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
-	"log"
-
+	"github.com/rstms/mabctl/api"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
 )
 
-var mkbookCmd = &cobra.Command{
-	Use:   "mkbook BOOK_NAME [DESCRIPTION]",
-	Short: "create a new address book",
+var noRemove bool
+
+var restoreCmd = &cobra.Command{
+	Use:   "restore [RESTORE_FILE]",
+	Short: "restore carddav config",
 	Long: `
-Create a new address book under the sender's address with the NAME and DESCRIPTION.
-returns a data structure including the new book token and URI
+Restore the cardDAV config for the sender user from the JSON data in RESTORE_FILE.
 `,
-	Args: cobra.RangeArgs(1, 2),
+	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		bookName := args[0]
-		description := bookName
-		if len(args) > 1 {
-			description = args[1]
+		filename := args[0]
+		var file *os.File
+		var err error
+		if filename == "" || filename == "-" {
+			file = os.Stdin
+		} else {
+			file, err = os.Open(filename)
+			cobra.CheckErr(err)
+			if !noRemove {
+				defer func() {
+					err := os.Remove(filename)
+					cobra.CheckErr(err)
+				}()
+			}
+			defer file.Close()
 		}
-		api := InitAPI()
-		text, err := AddAddressBook(api, viper.GetString("sender"), bookName, description)
+		MAB := InitAPI()
+		var response APIResponse
+		var request APIRestoreRequest
+		request.Username = viper.GetString("sender")
+		request.Dump = api.ConfigDump{}
+		decoder := json.NewDecoder(file)
+		err = decoder.Decode(&request.Dump)
+		cobra.CheckErr(err)
+		text, err := MAB.Post("/filterctl/restore/", &request, &response)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(mkbookCmd)
-}
-
-func AddAddressBook(api *APIClient, username, bookname, description string) (string, error) {
-	type Request struct {
-		Username    string
-		Bookname    string
-		Description string
-	}
-	request := Request{
-		Username:    username,
-		Bookname:    bookname,
-		Description: description,
-	}
-	var response APIResponse
-	result, err := api.Post("/filterctl/book/", &request, &response)
-	if err != nil {
-		return "", err
-	}
-	log.Printf("AddAddressBook: %s\n", result)
-	return result, nil
-
+	restoreCmd.Flags().BoolVar(&noRemove, "no-remove", false, "disable deletion of input file")
+	rootCmd.AddCommand(restoreCmd)
 }

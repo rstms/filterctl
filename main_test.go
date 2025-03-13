@@ -39,7 +39,7 @@ func TestMessages(t *testing.T) {
 			ibuf := bytes.NewBuffer(input)
 			obuf := bytes.Buffer{}
 			ebuf := bytes.Buffer{}
-			cmd := exec.Command("./filterctl", "--config", "testdata/config.yml")
+			cmd := exec.Command("./filterctl", "--config", "testdata/config.yaml")
 			cmd.Stdin = ibuf
 			cmd.Stdout = &obuf
 			cmd.Stderr = &ebuf

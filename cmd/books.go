@@ -24,6 +24,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/rstms/mabctl/api"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -38,7 +39,7 @@ Return a list of the sender's address books.
 	Run: func(cmd *cobra.Command, args []string) {
 		filterctld := InitAPI()
 		path := fmt.Sprintf("/filterctl/books/%s/", viper.GetString("sender"))
-		var response APIBooksResponse
+		var response api.BooksResponse
 		ret, err := filterctld.Get(path, &response)
 		cobra.CheckErr(err)
 		fmt.Println(ret)

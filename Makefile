@@ -49,4 +49,4 @@ sterile: clean
 	go clean -cache
 	go clean -modcache
 	rm -f go.mod go.sum
-	rm README.md
+	rm -f README.md
