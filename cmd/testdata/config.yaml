@@ -1,11 +1,12 @@
 disable_response: true
-hostname: test.mailcapsule.io
+hostname: testhost.mailcapsule.io
 domains: 
   - mailcapsule.io
-admin_url: http://127.0.0.1:2016
+server_url: http://127.0.0.1:2016
 verbose: true
 debug: true
 log_file: stderr
-cert: /etc/mabctl/mabctl.pem
-key: /etc/mabctl/mabctl.key
+cert: ~/ssl/filterctl.pem
+key: ~/ssl/filterctl.key
 #log_file: testdata/filterctl.log
+insecure_disable_username_check: true

@@ -36,13 +36,16 @@ var restoreCmd = &cobra.Command{
 	Use:   "restore [RESTORE_FILE]",
 	Short: "restore carddav config",
 	Long: `
-Restore the cardDAV config for the sender user from the JSON data in RESTORE_FILE.
+Restore the cardDAV config for the sender from the JSON data in RESTORE_FILE.
+When used with the email subject line command the message body must contain
+the restore data as JSON text.
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		filename := args[0]
-		var file *os.File
 		var err error
+		var file *os.File
+
 		if filename == "" || filename == "-" {
 			file = os.Stdin
 		} else {
@@ -62,7 +65,7 @@ Restore the cardDAV config for the sender user from the JSON data in RESTORE_FIL
 		request.Username = viper.GetString("sender")
 		request.Dump = api.ConfigDump{}
 		decoder := json.NewDecoder(file)
-		err = decoder.Decode(&request.Dump)
+		err = decoder.Decode(&request)
 		cobra.CheckErr(err)
 		text, err := MAB.Post("/filterctl/restore/", &request, &response)
 		cobra.CheckErr(err)

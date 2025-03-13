@@ -125,6 +125,9 @@ func init() {
 	rootCmd.PersistentFlags().BoolP("disable-response", "D", false, "disable sending output as mail message")
 	viper.BindPFlag("disable_response", rootCmd.PersistentFlags().Lookup("disable-response"))
 
+	rootCmd.PersistentFlags().Bool("insecure-disable-username-check", false, "disable failure if username not valid")
+	viper.BindPFlag("insecure_disable_username_check", rootCmd.PersistentFlags().Lookup("insecure-disable-username-check"))
+
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "enable diagnostic output")
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 
@@ -137,8 +140,8 @@ func init() {
 	rootCmd.PersistentFlags().String("ca", "/etc/ssl/keymaster.pem", "certificate authority file")
 	viper.BindPFlag("ca", rootCmd.PersistentFlags().Lookup("ca"))
 
-	rootCmd.PersistentFlags().String("url", "http://localhost:2016", "server url")
-	viper.BindPFlag("url", rootCmd.PersistentFlags().Lookup("url"))
+	rootCmd.PersistentFlags().String("server-url", "http://localhost:2016", "server url")
+	viper.BindPFlag("server_url", rootCmd.PersistentFlags().Lookup("server-url"))
 
 	rootCmd.PersistentFlags().String("sender", "", "from address")
 	viper.BindPFlag("sender", rootCmd.PersistentFlags().Lookup("sender"))
@@ -176,6 +179,7 @@ func initConfig() {
 }
 
 func InitIdentity() error {
+	verbose := viper.GetBool("verbose")
 	Hostname = viper.GetString("hostname")
 	Domains = viper.GetStringSlice("domains")
 	if Hostname == "" {
@@ -205,7 +209,7 @@ func InitIdentity() error {
 			}
 			host := matches[1]
 			domain := matches[2]
-			if viper.GetBool("verbose") {
+			if verbose {
 				log.Printf("addr=%s hostname=%s host=%s domain=%s\n", addr, hostname, host, domain)
 			}
 			if Hostname == "" {
@@ -239,8 +243,9 @@ func LogLines(label string, buf []byte) {
 }
 
 func ExecuteCommand(sender string, args []string) error {
-	if viper.GetBool("verbose") {
-		log.Printf("sender=%s command=%s args=%v\n", sender, os.Args[0], args)
+	verbose := viper.GetBool("verbose")
+	if verbose {
+		log.Printf("ExecuteCommand: sender=%s command=%s args=%v\n", sender, os.Args[0], args)
 	}
 	if viper.GetBool("disable_exec") {
 		return nil
@@ -263,7 +268,7 @@ func ExecuteCommand(sender string, args []string) error {
 		cmd.Env = append(cmd.Env, value)
 	}
 
-	if viper.GetBool("verbose") {
+	if verbose {
 		log.Println("BEGIN_SUBPROCESS_ENV")
 		for _, value := range cmd.Environ() {
 			log.Println(value)
@@ -273,19 +278,19 @@ func ExecuteCommand(sender string, args []string) error {
 
 	exitCode, stdout, stderr, err := run(cmd)
 
-	if viper.GetBool("verbose") {
+	if verbose {
 		log.Printf("subprocess exited %d\n", exitCode)
 		LogLines("SUBPROCESS_STDOUT", stdout)
 		LogLines("SUBPROCESS_STDERR", stderr)
 	}
 
-	if err != nil || exitCode != 0 || len(stderr) > 0 {
+	if err != nil || exitCode != 0 {
 		fail := map[string]any{
 			"Success": false,
 			"Message": fmt.Sprintf("%s internal failure", sender),
 			"Help":    "Send 'help' in Subject line for valid commands",
 		}
-		if viper.GetBool("verbose") {
+		if verbose {
 			detail := map[string]any{}
 			if err != nil {
 				detail["err"] = fmt.Sprintf("%v", err)
@@ -313,12 +318,12 @@ func ExecuteCommand(sender string, args []string) error {
 		return err
 	}
 
+	if verbose {
+		LogLines("RESPONSE", message)
+	}
+
 	if viper.GetBool("disable_response") {
-		if viper.GetBool("verbose") {
-			LogLines("RESPONSE", message)
-		} else {
-			log.Println(string(message))
-		}
+		fmt.Println(string(message))
 		return nil
 	}
 

@@ -17,8 +17,9 @@ func TestMessages(t *testing.T) {
 		ExpectSuccess bool
 	}{
 		{"help", true},
-		{"list", true},
+		{"restore", true},
 		{"reset", true},
+		{"classes", true},
 		{"delete-ham", true},
 		{"delete-all", true},
 		{"set", true},
@@ -30,8 +31,18 @@ func TestMessages(t *testing.T) {
 		{"suffix", true},
 		{"forwarded", true},
 		{"forwarded2", true},
+		{"dump", true},
 	}
+	log.SetOutput(os.Stderr)
+
+	selectedTest, selectionPresent := os.LookupEnv("TEST_MESSAGE")
 	for _, c := range cases {
+		if selectionPresent {
+			if c.Name != selectedTest {
+				continue
+			}
+		}
+
 		t.Run(c.Name, func(t *testing.T) {
 			log.Printf("BEGIN_TEST: %s\n", c.Name)
 			input, err := os.ReadFile("testdata/" + c.Name)

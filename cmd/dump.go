@@ -32,7 +32,8 @@ var dumpCmd = &cobra.Command{
 	Use:   "dump",
 	Short: "dump classes and carddav config",
 	Long: `
-Return the full set of classes and address books for all users.
+Return the sender's password, address books and the list of addresses for
+each address book.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		api := InitAPI()

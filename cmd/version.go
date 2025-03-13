@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rstms/mabctl/api"
 	"github.com/rstms/rspamd-classes/classes"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -44,6 +45,7 @@ Outputs program name, version, rspamd_classes library version, uid, and gid.
 			Name    string
 			Version string
 			Classes string
+			Mabctl  string
 			UID     int
 			GID     int
 		}
@@ -61,6 +63,7 @@ Outputs program name, version, rspamd_classes library version, uid, and gid.
 				Name:    os.Args[0],
 				Version: Version,
 				Classes: classes.Version,
+				Mabctl:  api.Version,
 				UID:     os.Getuid(),
 				GID:     os.Getgid(),
 			},

@@ -126,10 +126,11 @@ func handleForwardedMessage(m *mail.Reader, sender, suffix string) error {
 func handleCommandMessage(m *mail.Reader, sender string) error {
 	subject, err := m.Header.Subject()
 	cobra.CheckErr(err)
-	if subject == "" {
-		subject = "help"
-	}
 	fields := strings.Split(subject, " ")
+	if len(fields) == 0 {
+		fields = []string{"help"}
+	}
+
 	if len(fields) > 0 {
 		if fields[0] == "restore" {
 			filename, err := parseRestoreBody(m)
@@ -137,7 +138,6 @@ func handleCommandMessage(m *mail.Reader, sender string) error {
 				return err
 			}
 			fields = []string{"restore", filename}
-
 		}
 	}
 	return ExecuteCommand(sender, fields)
@@ -257,7 +257,11 @@ func checkSender(header mail.Header) (string, string) {
 
 	_, err = user.Lookup(username)
 	if err != nil {
-		log.Fatalf("From: invalid user: %s", username)
+		if viper.GetBool("insecure_disable_username_check") {
+			log.Printf("WARNING: insecure_disable_username_check: %s\n", username)
+		} else {
+			log.Fatalf("From: invalid user: %s", username)
+		}
 	}
 
 	for _, d := range Domains {
@@ -337,6 +341,7 @@ func parseForwardedBody(m *mail.Reader, suffix string) string {
 
 func bodyFile(body string) (string, error) {
 	tmpFile, err := ioutil.TempFile(os.TempDir(), "filterctl-body-*")
+	defer tmpFile.Close()
 	if err != nil {
 		return "", err
 	}
@@ -360,22 +365,43 @@ func parseRestoreBody(m *mail.Reader) (string, error) {
 		case *mail.InlineHeader:
 			value := h.Get("Content-Type")
 			contentType, _, _ := strings.Cut(value, ";")
-			switch contentType {
-			case "text/plain":
-				body := scanTextBody(p.Body)
-				return bodyFile(body)
-			case "text/html":
-				body := scanHTMLBody(p.Body)
-				return bodyFile(body)
-			default:
+			if contentType != "" && contentType != "text/plain" {
 				log.Printf("Warning: unexpected Content-Type: %s\n", contentType)
 			}
+
+			body, err := scanRestoreBody(p.Body)
+			if err != nil {
+				return "", err
+			}
+			filename, err := bodyFile(body)
+			if err != nil {
+				return "", fmt.Errorf("failure writing body file: %v", err)
+			}
+			return filename, nil
 		default:
 			log.Printf("Warning: unexpected forwarded body part header: %v\n", h)
 
 		}
 	}
 	return "", fmt.Errorf("failed to read restore body")
+}
+
+func scanRestoreBody(body io.Reader) (string, error) {
+	scanner := bufio.NewScanner(body)
+	count := 0
+	buf := bytes.Buffer{}
+	for scanner.Scan() {
+		line := scanner.Text()
+		if viper.GetBool("verbose") {
+			log.Printf("restore[%d]: %s\n", count, line)
+			_, err := buf.WriteString(line + "\n")
+			if err != nil {
+				log.Fatalf("failed writing to buffer: %v", err)
+			}
+		}
+		count += 1
+	}
+	return buf.String(), nil
 }
 
 func scanTextBody(body io.Reader) string {

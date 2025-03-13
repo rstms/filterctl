@@ -10,6 +10,9 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/rstms/mabctl/api"
 	"github.com/rstms/rspamd-classes/classes"
@@ -63,14 +66,39 @@ type APIRestoreRequest struct {
 	Dump     api.ConfigDump
 }
 
+func GetViperPath(key string) (string, error) {
+	path := viper.GetString(key)
+	if len(path) < 2 {
+		return "", fmt.Errorf("path %s too short: %s", key, path)
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	if strings.HasPrefix(path, "~") {
+		path = filepath.Join(home, path[1:])
+	}
+	return path, nil
+
+}
+
 func NewAPIClient() (*APIClient, error) {
 
-	certFile := viper.GetString("cert")
-	keyFile := viper.GetString("key")
-	caFile := viper.GetString("ca")
+	certFile, err := GetViperPath("cert")
+	if err != nil {
+		return nil, err
+	}
+	keyFile, err := GetViperPath("key")
+	if err != nil {
+		return nil, err
+	}
+	caFile, err := GetViperPath("ca")
+	if err != nil {
+		return nil, err
+	}
 
 	api := APIClient{
-		URL: viper.GetString("url"),
+		URL: viper.GetString("server_url"),
 	}
 
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)

@@ -33,8 +33,8 @@ var mkbookCmd = &cobra.Command{
 	Use:   "mkbook BOOK_NAME [DESCRIPTION]",
 	Short: "create a new address book",
 	Long: `
-Create a new address book under the sender's address with the NAME and DESCRIPTION.
-returns a data structure including the new book token and URI
+Create a new address book under the sender's address with the NAME and
+DESCRIPTION.  Returns a data structure including the new book token and URI
 `,
 	Args: cobra.RangeArgs(1, 2),
 	Run: func(cmd *cobra.Command, args []string) {

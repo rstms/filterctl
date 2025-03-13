@@ -4,7 +4,7 @@ go 1.22.1
 
 require (
 	github.com/emersion/go-message v0.18.2
-	github.com/rstms/mabctl v1.5.4
+	github.com/rstms/mabctl v1.5.7
 	github.com/rstms/rspamd-classes v1.0.2
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/viper v1.19.0

@@ -1,18 +1,18 @@
-Return-Path: <mkrueger@rstms.net>
-Delivered-To: mkrueger@rstms.net
+Return-Path: <test@mailcapsule.io>
+Delivered-To: test@mailcapsule.io
 DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; s=mailbox_1729240475; bh=9
 	VaeepiBfpvNSiiOxVUnShLV5w0JJ+g5leuMf4RKkF8=; h=in-reply-to:from:to:
-	references:subject:date; d=rstms.net; b=b9x68Eu/cXIvsmtktzEkcYL8JiE3NK
+	references:subject:date; d=mailcapsule.io; b=b9x68Eu/cXIvsmtktzEkcYL8JiE3NK
 	/UBmHl239Yxu5PRVvtnVsWLQNu6dfPMgpuYEdhJlGbAfavuPhEAP5Zj4OwojqkB0K7TiYq
 	we34Vezg3dOgxAEriwGpzbDmnjP2TlPrq3ehhKVCzrimDnh2H4jAvZqUIrDNS921l/bU8k
 	o=
 Received: from [192.168.66.16] (c-76-127-63-132.hsd1.nm.comcast.net [76.127.63.132])
-	by phobos.rstms.net (OpenSMTPD) with ESMTPSA id 9aa9d9ff (TLSv1.3:TLS_AES_256_GCM_SHA384:256:NO) auth=yes user=mkrueger
-	for <filterctl+testbook@rstms.net>;
+	by testhost.mailcapsule.io (OpenSMTPD) with ESMTPSA id 9aa9d9ff (TLSv1.3:TLS_AES_256_GCM_SHA384:256:NO) auth=yes user=test
+	for <filterctl+testbook@mailcapsule.io>;
 	Sat, 15 Feb 2025 16:03:46 -0700 (MST)
 Content-Type: multipart/alternative;
  boundary="------------0bBo3hPhGb9XsX4slquddLq0"
-Message-ID: <de7051d6-1b11-49ae-9483-930b02ea3854@rstms.net>
+Message-ID: <de7051d6-1b11-49ae-9483-930b02ea3854@mailcapsule.io>
 Date: Sat, 15 Feb 2025 16:03:45 -0700
 MIME-Version: 1.0
 User-Agent: Betterbird (Windows)
@@ -20,8 +20,8 @@ Subject: Fwd: Life, Liberty, & The Pursuit of Deals! | Winchester .22LR HP
  36gr 555rd Bricks For $29.99!
 References: <VbP5JxIRRBCGy0rb4hpmMg@geopod-ismtpd-23>
 Content-Language: en-US
-To: filterctl+testbook@rstms.net
-From: Matt Krueger <mkrueger@rstms.net>
+To: filterctl+testbook@mailcapsule.io
+From: Test User <test@mailcapsule.io>
 In-Reply-To: <VbP5JxIRRBCGy0rb4hpmMg@geopod-ismtpd-23>
 X-Forwarded-Message-Id: <VbP5JxIRRBCGy0rb4hpmMg@geopod-ismtpd-23>
 
@@ -1224,7 +1224,7 @@ ply@palmettostatearmory.com">noreply@palmettostatearmory.com</a></td>
             <th valign=3D"BASELINE" align=3D"RIGHT" nowrap=3D"nowrap">To:=
  </th>
             <td><a class=3D"moz-txt-link-abbreviated" href=3D"mailto:mkru=
-eger@rstms.net">mkrueger@rstms.net</a></td>
+eger@mailcapsule.io">test@mailcapsule.io</a></td>
           </tr>
         </tbody>
       </table>

@@ -42,9 +42,12 @@ Subject line of an email to filterctl@emaildomain.ext.
 		rule := "------------------------------------------------------------------------------\n"
 
 		type Response struct {
-			Success bool
-			Message string
-			Help    []string
+			Success  bool
+			User     string
+			Request  string
+			Message  string
+			Help     []string
+			Commands []string
 		}
 
 		commands := []struct {
@@ -65,11 +68,13 @@ Subject line of an email to filterctl@emaildomain.ext.
 			{"rmaddr", "BOOK_NAME EMAIL_ADDRESS", rmaddrCmd.Long},
 			{"scan", "EMAIL_ADDRESS", scanCmd.Long},
 			{"passwd", "", passwdCmd.Long},
+			{"dump", "", dumpCmd.Long},
+			{"restore", "", restoreCmd.Long},
 			{"version", "", versionCmd.Long},
 			{"usage", "", "\nOutput this message\n"},
 		}
 
-		text := `### filterctl ####
+		help := `### filterctl ####
 The email address 'filterctl@DOMAIN.EXT' accepts messages only from internal
 users on a TLS-secured authorized connection.  Messages may be sent to this 
 address to examine or modify the configuration of several filter mechanisms.
@@ -127,19 +132,28 @@ book name is then parsed from the suffix part of the address.  If the book
 does not exist it is created.  Finally, the forwarded message's From address
 is added to the address book.  Thereafter, all incoming mail from that sender
 will be annotated with the corresponding 'X-Address-Book' header.
-
-# filterctl subject line commands #
 `
-		text += rule
+
+		usage := "# filterctl subject line commands #\n"
+		usage += rule
 		for _, cmd := range commands {
-			text += fmt.Sprintf("%s %s\n%s\n", cmd.Name, cmd.Args, cmd.Detail)
-			text += rule
+			name := cmd.Name
+			if cmd.Args != "" {
+				name += " " + cmd.Args
+			}
+			usage += fmt.Sprintf("%s\n%s\n", name, cmd.Detail)
+			usage += rule
 		}
 
+		sender := viper.GetString("sender")
+
 		response := Response{
-			Success: true,
-			Message: fmt.Sprintf("%s usage", viper.GetString("sender")),
-			Help:    strings.Split(text, "\n"),
+			User:     sender,
+			Request:  "usage",
+			Success:  true,
+			Message:  fmt.Sprintf("%s usage", sender),
+			Help:     strings.Split(help, "\n"),
+			Commands: strings.Split(usage, "\n"),
 		}
 		out, err := json.MarshalIndent(&response, "", "  ")
 		cobra.CheckErr(err)
