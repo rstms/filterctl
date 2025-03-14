@@ -25,6 +25,7 @@ import (
 	//"bufio"
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"github.com/emersion/go-message/mail"
 	"github.com/spf13/cobra"
@@ -89,6 +90,11 @@ func ParseFile(input io.Reader) error {
 	m, err := mail.CreateReader(input)
 	cobra.CheckErr(err)
 	printHeaders("message", &m.Header)
+	rawMessageID := m.Header.Get("Message-ID")
+	if rawMessageID == "" {
+		return fmt.Errorf("missing Message-ID header")
+	}
+	messageID := base64.StdEncoding.EncodeToString([]byte(rawMessageID))
 	sender, username := checkSender(m.Header)
 	checkDKIM(m.Header)
 	recipient, suffix := checkRecipient(m.Header)
@@ -102,16 +108,18 @@ func ParseFile(input io.Reader) error {
 		log.Printf("From: %s\n", sender)
 		log.Printf("To: %s\n", recipient)
 		log.Printf("Suffix: %s\n", suffix)
+		log.Printf("Message-ID: %s\n", rawMessageID)
+		log.Printf("encoded Message-ID: %s\n", messageID)
 		log.Println("END-ID")
 	}
 
 	if suffix != "" {
-		return handleForwardedMessage(m, sender, suffix)
+		return handleForwardedMessage(m, sender, suffix, messageID)
 	}
-	return handleCommandMessage(m, sender)
+	return handleCommandMessage(m, sender, messageID)
 }
 
-func handleForwardedMessage(m *mail.Reader, sender, suffix string) error {
+func handleForwardedMessage(m *mail.Reader, sender, suffix, messageID string) error {
 
 	address := parseForwardedBody(m, suffix)
 
@@ -120,10 +128,10 @@ func handleForwardedMessage(m *mail.Reader, sender, suffix string) error {
 	}
 	args := []string{"mkaddr", suffix, address}
 	log.Printf("handleForwardedMessage: %v", args)
-	return ExecuteCommand(sender, args)
+	return ExecuteCommand(sender, messageID, args)
 }
 
-func handleCommandMessage(m *mail.Reader, sender string) error {
+func handleCommandMessage(m *mail.Reader, sender, messageID string) error {
 	subject, err := m.Header.Subject()
 	cobra.CheckErr(err)
 	fields := strings.Split(subject, " ")
@@ -140,7 +148,7 @@ func handleCommandMessage(m *mail.Reader, sender string) error {
 			fields = []string{"restore", filename}
 		}
 	}
-	return ExecuteCommand(sender, fields)
+	return ExecuteCommand(sender, messageID, fields)
 }
 
 func printHeaders(name string, header *mail.Header) {

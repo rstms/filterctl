@@ -41,15 +41,6 @@ Subject line of an email to filterctl@emaildomain.ext.
 	Run: func(cmd *cobra.Command, args []string) {
 		rule := "------------------------------------------------------------------------------\n"
 
-		type Response struct {
-			Success  bool
-			User     string
-			Request  string
-			Message  string
-			Help     []string
-			Commands []string
-		}
-
 		commands := []struct {
 			Name   string
 			Args   string
@@ -147,14 +138,15 @@ will be annotated with the corresponding 'X-Address-Book' header.
 
 		sender := viper.GetString("sender")
 
-		response := Response{
-			User:     sender,
-			Request:  "usage",
-			Success:  true,
-			Message:  fmt.Sprintf("%s usage", sender),
-			Help:     strings.Split(help, "\n"),
-			Commands: strings.Split(usage, "\n"),
-		}
+		var response APIUsageResponse
+
+		response.User = sender
+		response.Request = viper.GetString("message_id")
+		response.Success = true
+		response.Message = fmt.Sprintf("%s usage", sender)
+		response.Help = strings.Split(help, "\n")
+		response.Commands = strings.Split(usage, "\n")
+
 		out, err := json.MarshalIndent(&response, "", "  ")
 		cobra.CheckErr(err)
 		fmt.Println(string(out))

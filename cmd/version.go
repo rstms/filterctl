@@ -41,33 +41,18 @@ Outputs program name, version, rspamd_classes library version, uid, and gid.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 
-		type Content struct {
-			Name    string
-			Version string
-			Classes string
-			Mabctl  string
-			UID     int
-			GID     int
-		}
+		var response APIVersionResponse
 
-		type Response struct {
-			Success bool
-			Message string
-			Version Content
-		}
-
-		response := Response{
-			Success: true,
-			Message: fmt.Sprintf("%s version", viper.GetString("sender")),
-			Version: Content{
-				Name:    os.Args[0],
-				Version: Version,
-				Classes: classes.Version,
-				Mabctl:  api.Version,
-				UID:     os.Getuid(),
-				GID:     os.Getgid(),
-			},
-		}
+		response.User = viper.GetString("sender")
+		response.Request = viper.GetString("message_id")
+		response.Success = true
+		response.Message = fmt.Sprintf("%s version", viper.GetString("sender"))
+		response.Name = os.Args[0]
+		response.Version = Version
+		response.Classes = classes.Version
+		response.Mabctl = api.Version
+		response.UID = os.Getuid()
+		response.GID = os.Getgid()
 
 		out, err := json.MarshalIndent(&response, "", "  ")
 		cobra.CheckErr(err)

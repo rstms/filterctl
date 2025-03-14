@@ -66,6 +66,22 @@ type APIRestoreRequest struct {
 	Dump     api.ConfigDump
 }
 
+type APIUsageResponse struct {
+	APIResponse
+	Help     []string
+	Commands []string
+}
+
+type APIVersionResponse struct {
+	APIResponse
+	Name    string
+	Version string
+	Classes string
+	Mabctl  string
+	UID     int
+	GID     int
+}
+
 func GetViperPath(key string) (string, error) {
 	path := viper.GetString(key)
 	if len(path) < 2 {
@@ -181,7 +197,51 @@ func (a *APIClient) request(method, path string, requestData, responseData inter
 		return "", fmt.Errorf("failed decoding JSON response: %v", err)
 	}
 
-	text, err := json.MarshalIndent(responseData, "", "  ")
+	messageID := viper.GetString("message_id")
+	username := viper.GetString("sender")
+	var text []byte
+
+	switch t := responseData.(type) {
+	case *APIResponse:
+		var data *APIResponse
+		data = responseData.(*APIResponse)
+		data.Request = messageID
+		data.User = username
+		text, err = json.MarshalIndent(&data, "", "  ")
+	case *APIClassesResponse:
+		var data *APIClassesResponse
+		data = responseData.(*APIClassesResponse)
+		data.Request = messageID
+		data.User = username
+		text, err = json.MarshalIndent(&data, "", "  ")
+	case *APIAddressesResponse:
+		var data *APIAddressesResponse
+		data = responseData.(*APIAddressesResponse)
+		data.Request = messageID
+		data.User = username
+		text, err = json.MarshalIndent(&data, "", "  ")
+	case *api.BooksResponse:
+		var data *api.BooksResponse
+		data = responseData.(*api.BooksResponse)
+		data.User = username
+		data.Request = messageID
+		text, err = json.MarshalIndent(&data, "", "  ")
+	case *APIDumpResponse:
+		var data *APIDumpResponse
+		data = responseData.(*APIDumpResponse)
+		data.Request = messageID
+		data.User = username
+		text, err = json.MarshalIndent(&data, "", "  ")
+	case *APIPasswordResponse:
+		var data *APIPasswordResponse
+		data = responseData.(*APIPasswordResponse)
+		data.Request = messageID
+		data.User = username
+		text, err = json.MarshalIndent(&data, "", "  ")
+	default:
+		log.Fatalf("unknown type: %T\n", t)
+	}
+
 	if err != nil {
 		return "", fmt.Errorf("failed formatting JSON response: %v", err)
 	}

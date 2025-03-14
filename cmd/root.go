@@ -146,6 +146,8 @@ func init() {
 	rootCmd.PersistentFlags().String("sender", "", "from address")
 	viper.BindPFlag("sender", rootCmd.PersistentFlags().Lookup("sender"))
 
+	rootCmd.PersistentFlags().String("message-id", "", "base64-encoded message ID")
+	viper.BindPFlag("message_id", rootCmd.PersistentFlags().Lookup("message-id"))
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -242,10 +244,10 @@ func LogLines(label string, buf []byte) {
 	}
 }
 
-func ExecuteCommand(sender string, args []string) error {
+func ExecuteCommand(sender, messageID string, args []string) error {
 	verbose := viper.GetBool("verbose")
 	if verbose {
-		log.Printf("ExecuteCommand: sender=%s command=%s args=%v\n", sender, os.Args[0], args)
+		log.Printf("ExecuteCommand: sender=%s messageID=%s command=%s args=%v\n", sender, messageID, os.Args[0], args)
 	}
 	if viper.GetBool("disable_exec") {
 		return nil
@@ -255,6 +257,7 @@ func ExecuteCommand(sender string, args []string) error {
 		args[0] = "usage"
 	}
 	viper.Set("sender", sender)
+	viper.Set("message_id", messageID)
 	//args = append([]string{"--sender", Sender}, args...)
 	cmd := exec.Command(os.Args[0], args...)
 
@@ -313,7 +316,8 @@ func ExecuteCommand(sender string, args []string) error {
 	}
 
 	// generate RFC2822 email message
-	message, err := formatEmailMessage("filterctl response", sender, "filterctl@"+Domains[0], stdout)
+	responseSubject := fmt.Sprintf("filterctl response %s", viper.GetString("message-id"))
+	message, err := formatEmailMessage(responseSubject, sender, "filterctl@"+Domains[0], stdout)
 	if err != nil {
 		return err
 	}
@@ -368,4 +372,10 @@ func InitAPI() *APIClient {
 		cobra.CheckErr(errors.New("missing sender"))
 	}
 	return api
+}
+
+func PrintResponse(text string, response interface{}) {
+	output, err := json.MarshalIndent(response, "", "  ")
+	cobra.CheckErr(err)
+	fmt.Printf("%s\n", string(output))
 }

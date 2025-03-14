@@ -1,5 +1,6 @@
 From: Test User <test@mailcapsule.io>
 To: filterctl <filterctl@mailcapsule.io>
+Message-ID: <662a7a9e3665eca5@capsule.mailcapsule.io>
 Received: from [192.168.66.16] (c-76-127-63-132.hsd1.nm.comcast.net [76.127.63.132]) by testhost.mailcapsule.io (OpenSMTPD) with ESMTPSA id 05a827d4 (TLSv1.3:TLS_AES_256_GCM_SHA384:256:NO) auth=yes user=test for <filterctl@mailcapsule.io>; Fri, 1 Nov 2024 23:01:40 -0600 (MDT)
 DKIM-Signature: v=1; a=rsa-sha256; c=simple/simple; s=mailbox_1729240475; 
   bh=f rcCV1k9oG9oKj3dpUqdJg1PxRT2RSN/XKdLCPjaYaY=; h=to:subject:from:date; d=mailcapsule.io; 
