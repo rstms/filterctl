@@ -42,9 +42,11 @@ Outputs program name, version, rspamd_classes library version, uid, and gid.
 	Run: func(cmd *cobra.Command, args []string) {
 
 		var response APIVersionResponse
+		var err error
 
 		response.User = viper.GetString("sender")
-		response.Request = viper.GetString("message_id")
+		response.Request, err = DecodedMessageID(viper.GetString("message_id"))
+		cobra.CheckErr(err)
 		response.Success = true
 		response.Message = fmt.Sprintf("%s version", viper.GetString("sender"))
 		response.Name = os.Args[0]

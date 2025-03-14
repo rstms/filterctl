@@ -3,8 +3,8 @@ package cmd
 import (
 	"fmt"
 	"github.com/rstms/mabctl/api"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
-	//"github.com/spf13/viper"
 	"testing"
 )
 
@@ -14,6 +14,7 @@ func TestScanCommand(t *testing.T) {
 	filterctld := InitAPI()
 	sender := "sender@example.org"
 	address := "address@example.org"
+	viper.Set("message_id", EncodedMessageID("test scan message id"))
 	var response api.BooksResponse
 	path := fmt.Sprintf("/filterctl/scan/%s/%s/", sender, address)
 	text, err := filterctld.Get(path, &response)

@@ -197,7 +197,10 @@ func (a *APIClient) request(method, path string, requestData, responseData inter
 		return "", fmt.Errorf("failed decoding JSON response: %v", err)
 	}
 
-	messageID := viper.GetString("message_id")
+	messageID, err := DecodedMessageID(viper.GetString("message_id"))
+	if err != nil {
+		return "", err
+	}
 	username := viper.GetString("sender")
 	var text []byte
 

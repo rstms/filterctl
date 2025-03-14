@@ -137,11 +137,13 @@ will be annotated with the corresponding 'X-Address-Book' header.
 		}
 
 		sender := viper.GetString("sender")
+		messageID, err := DecodedMessageID(viper.GetString("message_id"))
+		cobra.CheckErr(err)
 
 		var response APIUsageResponse
 
 		response.User = sender
-		response.Request = viper.GetString("message_id")
+		response.Request = messageID
 		response.Success = true
 		response.Message = fmt.Sprintf("%s usage", sender)
 		response.Help = strings.Split(help, "\n")

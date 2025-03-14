@@ -23,6 +23,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -244,6 +245,21 @@ func LogLines(label string, buf []byte) {
 	}
 }
 
+func EncodedMessageID(messageID string) string {
+	return base64.StdEncoding.EncodeToString([]byte(messageID))
+}
+
+func DecodedMessageID(encoded string) (string, error) {
+	if encoded == "" {
+		return "", fmt.Errorf("encoded message_id is null")
+	}
+	decoded, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", fmt.Errorf("message_id decode failed: %v", err)
+	}
+	return string(decoded), nil
+}
+
 func ExecuteCommand(sender, messageID string, args []string) error {
 	verbose := viper.GetBool("verbose")
 	if verbose {
@@ -257,8 +273,7 @@ func ExecuteCommand(sender, messageID string, args []string) error {
 		args[0] = "usage"
 	}
 	viper.Set("sender", sender)
-	viper.Set("message_id", messageID)
-	//args = append([]string{"--sender", Sender}, args...)
+	viper.Set("message_id", EncodedMessageID(messageID))
 	cmd := exec.Command(os.Args[0], args...)
 
 	cmd.Env = []string{}
@@ -317,7 +332,7 @@ func ExecuteCommand(sender, messageID string, args []string) error {
 
 	// generate RFC2822 email message
 	responseSubject := fmt.Sprintf("filterctl response %s", viper.GetString("message-id"))
-	message, err := formatEmailMessage(responseSubject, sender, "filterctl@"+Domains[0], stdout)
+	message, err := formatEmailMessage(messageID, responseSubject, sender, "filterctl@"+Domains[0], stdout)
 	if err != nil {
 		return err
 	}
@@ -372,10 +387,4 @@ func InitAPI() *APIClient {
 		cobra.CheckErr(errors.New("missing sender"))
 	}
 	return api
-}
-
-func PrintResponse(text string, response interface{}) {
-	output, err := json.MarshalIndent(response, "", "  ")
-	cobra.CheckErr(err)
-	fmt.Printf("%s\n", string(output))
 }
