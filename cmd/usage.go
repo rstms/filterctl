@@ -87,7 +87,7 @@ the command.
 
 # X-Spam-Score Header # 
 The rspamd classifier on the mailserver adds an 'X-Spam-Score' header to each
-incoming message.  This header value generaly ranges between -20.0 and +20.0,
+incoming message.  This header value generally ranges between -20.0 and +20.0,
 with higher numbers indicating more spam characteristics.
 
 # X-Spam-Class Header #
