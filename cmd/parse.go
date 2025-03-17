@@ -93,6 +93,12 @@ func ParseFile(input io.Reader) error {
 	if messageID == "" {
 		return fmt.Errorf("missing Message-ID header")
 	}
+	// use the custom request ID header as the messageID if present
+	requestID := m.Header.Get("X-Filterctl-Request-Id")
+	if requestID == "" {
+		requestID = messageID
+	}
+	requestID = strings.Trim(requestID, "<>")
 	sender, username := checkSender(m.Header)
 	checkDKIM(m.Header)
 	recipient, suffix := checkRecipient(m.Header)
@@ -107,13 +113,14 @@ func ParseFile(input io.Reader) error {
 		log.Printf("To: %s\n", recipient)
 		log.Printf("Suffix: %s\n", suffix)
 		log.Printf("Message-ID: %s\n", messageID)
+		log.Printf("Request-ID: %s\n", requestID)
 		log.Println("END-ID")
 	}
 
 	if suffix != "" {
-		return handleForwardedMessage(m, sender, suffix, messageID)
+		return handleForwardedMessage(m, sender, suffix, requestID)
 	}
-	return handleCommandMessage(m, sender, messageID)
+	return handleCommandMessage(m, sender, requestID)
 }
 
 func handleForwardedMessage(m *mail.Reader, sender, suffix, messageID string) error {
