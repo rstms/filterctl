@@ -176,6 +176,8 @@ func initConfig() {
 	viper.SetEnvPrefix("filterctl")
 	viper.AutomaticEnv() // read in environment variables that match
 
+	viper.SetDefault("message_id", EncodedMessageID("filter_control_message"))
+
 	// If a config file is found, read it in.
 	err := viper.ReadInConfig()
 	cobra.CheckErr(err)

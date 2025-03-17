@@ -65,64 +65,71 @@ Subject line of an email to filterctl@emaildomain.ext.
 			{"usage", "", "\nOutput this message\n"},
 		}
 
-		help := `### filterctl ####
-The email address 'filterctl@DOMAIN.EXT' accepts messages only from internal
-users on a TLS-secured authorized connection.  Messages may be sent to this 
-address to examine or modify the configuration of several filter mechanisms.
-(DOMAIN.EXT represents the full domain name for any email account)
+		help := `### Mail Filter Control ####
+# Filter Control Address #
+The email address 'filterctl@[account_domain]' accepts messages only from
+internal users connecting on a TLS-secured authorized connection.  Messages
+may be sent to this address to examine or modify the configuration of several
+filter mechanisms. 
+
+In this document [account_domain] represents the full domain name for any 
+email account. The filter control address for a user with the email address 
+'mailuser@mailserver.com' would be 'filterctl@mailserver.com'
 
 Each email user may customize parameters and settings used for their account
 with this email-based command interface.  Commands are executed by sending a
-message to 'filterctl@your_domain.com' with the command and any arguments as
+message to 'filterctl@[account_domain]' with the command and any arguments as
 the 'Subject' line.  The message body is usually ignored.  (see below for an
-exception to this rule)  When the command is executed, a reply message is sent
-from filterctl@DOMAIN.EXT with the subject 'filterctl response'.  The body of
-the reply message contains the command's output.  
+exception to this rule)  When the command is executed by the mailserver a
+response message is sent from 'filterctl@[account_domain]' with the subject
+'filterctl response'.  The body of the response message contains output from
+the command.
 
-# X-Spam-Score # 
+# X-Spam-Score Header # 
 The rspamd classifier on the mailserver adds an 'X-Spam-Score' header to each
 incoming message.  This header value generaly ranges between -20.0 and +20.0,
 with higher numbers indicating more spam characteristics.
 
-# X-Spam-Class #
+# X-Spam-Class Header #
 To facilitate the use of filter rules in the email client, The spam classes
 filter adds an 'X-Spam-Class' header value based on a list of class names.
 Each class is associated with a maximum score value.  The highest class is
 'spam' with a fixed maximum.  A default set of classes is used if the user
 has not set any custom classes.
 
-# X-Address-Book #
+# Address Book Filter #
 The system maintains address books which may be used to classify mail by
-sender address without regard to message content.  These address books are
+sender address bypassing analysis of message content.  These address books are
 stored on a remote CardDAV server.  Note that the address book filter's
 address books are separate from the mail client's address books and are used
 only for filtering inbound mail.
 
+# X-Address-Book Header #
 The address book filter adds an 'X-Address-Book' header value to any incoming
 message with a 'From' address that is listed in any of the address books
 associated with a recipient email address.  The header's value is set to the
 name of the address book containing the sender address.  Multiple headers may
 be present if a sender address is listed in multiple filter address books.
 
-# plus extension aliasing #
+# Plus Extension Aliasing #
 This mailserver supports the 'plus-extension' mechanism.  Incoming mail for
 any valid username with a '+suffix' will be accepted as addressed to the
 part of the username preceeding the '+' character.  For example, mail sent to
-'user+suffix@domain.com' will appear in the inbox of 'user@domain.com'.
-Plus-extension aliasing requires no configuration and is useful in 
-coordination with client filtering rules.
+'username+suffix@[account_domain]' will appear in the inbox of 
+'user@[account_domain]'.  Plus-extension aliasing requires no configuration
+and is useful in coordination with client filtering rules.
 
-# address book filter forwarding #
+# Address Book Filter Forwarding #
 A mechanism exists for automatically adding the sender of a mail message to an
 address book filter by forwarding the message to the filterctl address using a
 'plus-suffix' to specify the desired book name.  To add the 'From' address of
 an email in one of your mail folders to an address book filter, forward the
-email to 'filterctl+BOOK_NAME@DOMAIN.EXT'.  The filterctl command processor
-will first extract the From address from the forwarded message.  The address
-book name is then parsed from the suffix part of the address.  If the book
-does not exist it is created.  Finally, the forwarded message's From address
-is added to the address book.  Thereafter, all incoming mail from that sender
-will be annotated with the corresponding 'X-Address-Book' header.
+email to 'filterctl+[book_name]@[account_domain]'.  The filterctl command
+processor will first extract the From address from the forwarded message.  The
+address book name is then taken from the suffix part of the address.  If the
+book does not exist it is created.  Finally, the forwarded message's From
+address is added to the address book.  Thereafter, all incoming mail from that
+sender will be annotated with the corresponding 'X-Address-Book' header.
 `
 
 		usage := "# filterctl subject line commands #\n"
