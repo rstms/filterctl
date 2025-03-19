@@ -307,6 +307,7 @@ func ExecuteCommand(sender, messageID string, args []string) error {
 	if err != nil || exitCode != 0 {
 		fail := map[string]any{
 			"Success": false,
+			"Request": messageID,
 			"Message": fmt.Sprintf("%s internal failure", sender),
 			"Help":    "Send 'help' in Subject line for valid commands",
 		}
