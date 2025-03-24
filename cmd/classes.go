@@ -37,22 +37,14 @@ sender address.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
 		api := InitAPI()
-		classes, _, err := GetClasses(api)
+		var data APIClassesResponse
+		path := fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender"))
+		response, err := api.Get(path, &data)
 		cobra.CheckErr(err)
-		fmt.Println(classes)
+		fmt.Println(response)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(classesCmd)
-}
-
-func GetClasses(api *APIClient) (string, *APIClassesResponse, error) {
-	var data APIClassesResponse
-	path := fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender"))
-	response, err := api.Get(path, &data)
-	if err != nil {
-		return "", nil, err
-	}
-	return response, &data, nil
 }

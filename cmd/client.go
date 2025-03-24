@@ -58,7 +58,9 @@ type APIPasswordResponse struct {
 
 type APIDumpResponse struct {
 	APIResponse
-	Dump map[string]any
+	Classes  []classes.SpamClass
+	Books    map[string]any
+	Password string
 }
 
 type APIRestoreRequest struct {
