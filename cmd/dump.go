@@ -22,6 +22,7 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -38,10 +39,20 @@ each address book.
 	Run: func(cmd *cobra.Command, args []string) {
 		api := InitAPI()
 		var data APIDumpResponse
-		path := fmt.Sprintf("/filterctl/dump/%s/", viper.GetString("sender"))
-		text, err := api.Get(path, &data)
+		sender := viper.GetString("sender")
+		path := fmt.Sprintf("/filterctl/dump/%s/", sender)
+		_, err := api.Get(path, &data)
 		cobra.CheckErr(err)
-		fmt.Println(text)
+		_, classes, err := GetClasses(api)
+		cobra.CheckErr(err)
+		fmt.Printf("classes=%+v\n", classes)
+		userData := data.Dump["Users"]
+		userData(*map[string]any)
+		userData["Classes"] = classes
+		fmt.Printf("userData=%+v\n", userData)
+		//["Classes"] = classes
+		result, err := json.MarshalIndent(&userData, "", "  ")
+		fmt.Println(string(result))
 	},
 }
 
