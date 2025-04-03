@@ -32,6 +32,7 @@ func TestMessages(t *testing.T) {
 		{"forwarded", true},
 		{"forwarded2", true},
 		{"dump", true},
+		{"accounts", true},
 	}
 	log.SetOutput(os.Stderr)
 

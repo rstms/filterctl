@@ -56,6 +56,11 @@ type APIPasswordResponse struct {
 	Password string
 }
 
+type APIAccountsResponse struct {
+	APIResponse
+	Accounts map[string]string
+}
+
 type APIDumpResponse struct {
 	APIResponse
 	Classes  []classes.SpamClass

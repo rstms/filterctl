@@ -144,12 +144,12 @@ func handleCommandMessage(m *mail.Reader, sender, messageID string) error {
 	}
 
 	if len(fields) > 0 {
-		if fields[0] == "restore" {
+		if fields[0] == "restore" || fields[0] == "accounts" {
 			filename, err := parseRestoreBody(m)
 			if err != nil {
 				return err
 			}
-			fields = []string{"restore", filename}
+			fields = []string{fields[0], filename}
 		}
 	}
 	return ExecuteCommand(sender, messageID, fields)
