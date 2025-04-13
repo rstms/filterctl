@@ -12,12 +12,16 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/rstms/mabctl/api"
 	"github.com/rstms/rspamd-classes/classes"
 	"github.com/spf13/viper"
 )
+
+var ADDR_PATTERN = regexp.MustCompile(`^.*<([^>]*)>.*$`)
+var EMAIL_PATTERN = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
 
 type APIClient struct {
 	Client *http.Client
@@ -87,6 +91,12 @@ type APIVersionResponse struct {
 	Mabctl  string
 	UID     int
 	GID     int
+}
+
+type APIRescanRequest struct {
+	Username   string
+	Folder     string
+	MessageIds []string
 }
 
 func GetViperPath(key string) (string, error) {
