@@ -144,7 +144,10 @@ func NewAPIClient(url string) (*APIClient, error) {
 		return nil, fmt.Errorf("error loading certificate authority file: %v", err)
 	}
 
-	caCertPool := x509.NewCertPool()
+	caCertPool, err := x509.SystemCertPool()
+	if err != nil {
+		return nil, fmt.Errorf("error opening system cert pool: %v", err)
+	}
 	caCertPool.AppendCertsFromPEM(caCert)
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
