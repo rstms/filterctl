@@ -323,7 +323,6 @@ func parseForwardedBody(m *mail.Reader, suffix string) string {
 		} else if err != nil {
 			log.Fatalf("failure parsing forwarded body: %v", err)
 		}
-		//log.Printf("PART: %+v\n", p)
 		switch h := p.Header.(type) {
 		case *mail.InlineHeader:
 			fromValue := h.Get("From")
@@ -372,9 +371,6 @@ func parseJSONBody(m *mail.Reader, command string) string {
 			break
 		} else if err != nil {
 			log.Fatalf("failure reading mesage body: %v", err)
-		}
-		if viper.GetBool("verbose") {
-			log.Printf("PART: %+v\n", p)
 		}
 		switch h := p.Header.(type) {
 		case *mail.InlineHeader:
