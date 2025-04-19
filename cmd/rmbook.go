@@ -38,12 +38,12 @@ All addresses in the named address book are DELETED.
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		filterctld := InitAPI()
+		filterctl := NewFilterctlClient()
 		user := viper.GetString("sender")
 		token := args[0]
 		path := fmt.Sprintf("/filterctl/book/%s/%s/", user, token)
 		var response APIResponse
-		text, err := filterctld.Delete(path, &response)
+		text, err := filterctl.Delete(path, &response)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
@@ -51,14 +51,4 @@ All addresses in the named address book are DELETED.
 
 func init() {
 	rootCmd.AddCommand(rmbookCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// rmbookCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// rmbookCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

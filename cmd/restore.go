@@ -30,8 +30,6 @@ import (
 	"os"
 )
 
-var noRemove bool
-
 var restoreCmd = &cobra.Command{
 	Use:   "restore [RESTORE_FILE]",
 	Short: "restore carddav config",
@@ -51,7 +49,7 @@ the restore data as JSON text.
 		} else {
 			file, err = os.Open(filename)
 			cobra.CheckErr(err)
-			if !noRemove {
+			if !viper.GetBool("no_remove") {
 				defer func() {
 					err := os.Remove(filename)
 					cobra.CheckErr(err)
@@ -59,21 +57,20 @@ the restore data as JSON text.
 			}
 			defer file.Close()
 		}
-		MAB := InitAPI()
-		var response APIResponse
+		filterctl := NewFilterctlClient()
 		var request APIRestoreRequest
+		var response APIResponse
 		request.Username = viper.GetString("sender")
 		request.Dump = api.ConfigDump{}
 		decoder := json.NewDecoder(file)
 		err = decoder.Decode(&request)
 		cobra.CheckErr(err)
-		text, err := MAB.Post("/filterctl/restore/", &request, &response)
+		text, err := filterctl.Post("/filterctl/restore/", &request, &response)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
 }
 
 func init() {
-	restoreCmd.Flags().BoolVar(&noRemove, "no-remove", false, "disable deletion of input file")
 	rootCmd.AddCommand(restoreCmd)
 }

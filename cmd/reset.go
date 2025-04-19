@@ -44,7 +44,7 @@ the upper limit for each class.  Any number of classes may be defined.
 If no class specifications are provided, default values will be used.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := InitAPI()
+		filterctl := NewFilterctlClient()
 
 		// if no args provided, generate from default config
 		type Request struct {
@@ -71,7 +71,7 @@ If no class specifications are provided, default values will be used.
 			request.Classes[i].Score = float32(score)
 		}
 		var response APIClassesResponse
-		text, err := api.Post("/filterctl/classes/", &request, &response)
+		text, err := filterctl.Post("/filterctl/classes/", &request, &response)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
@@ -79,14 +79,4 @@ If no class specifications are provided, default values will be used.
 
 func init() {
 	rootCmd.AddCommand(resetCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// resetCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// resetCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

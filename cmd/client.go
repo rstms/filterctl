@@ -115,7 +115,7 @@ func GetViperPath(key string) (string, error) {
 
 }
 
-func NewAPIClient() (*APIClient, error) {
+func NewAPIClient(urlKey string) (*APIClient, error) {
 
 	certFile, err := GetViperPath("cert")
 	if err != nil {
@@ -131,7 +131,7 @@ func NewAPIClient() (*APIClient, error) {
 	}
 
 	api := APIClient{
-		URL: viper.GetString("server_url"),
+		URL: viper.GetString(urlKey),
 	}
 
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
@@ -148,7 +148,7 @@ func NewAPIClient() (*APIClient, error) {
 	caCertPool.AppendCertsFromPEM(caCert)
 	tlsConfig := &tls.Config{
 		Certificates: []tls.Certificate{cert},
-		//RootCAs:      caCertPool,
+		RootCAs:      caCertPool,
 	}
 	api.Client = &http.Client{
 		Transport: &http.Transport{

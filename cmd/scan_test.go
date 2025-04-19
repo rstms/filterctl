@@ -11,13 +11,13 @@ import (
 func TestScanCommand(t *testing.T) {
 	err := InitIdentity()
 	require.Nil(t, err)
-	filterctld := InitAPI()
+	filterctl := NewFilterctlClient()
 	sender := "sender@example.org"
 	address := "address@example.org"
 	viper.Set("message_id", EncodedMessageID("test scan message id"))
 	var response api.BooksResponse
 	path := fmt.Sprintf("/filterctl/scan/%s/%s/", sender, address)
-	text, err := filterctld.Get(path, &response)
+	text, err := filterctl.Get(path, &response)
 	require.Nil(t, err)
 	fmt.Printf("text=%v\n", text)
 	fmt.Printf("response=%v\n", response)

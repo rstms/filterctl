@@ -48,7 +48,7 @@ message body must contain the JSON email address list.
 		} else {
 			file, err = os.Open(filename)
 			cobra.CheckErr(err)
-			if !noRemove {
+			if !viper.GetBool("no_remove") {
 				defer func() {
 					err := os.Remove(filename)
 					cobra.CheckErr(err)
@@ -56,7 +56,7 @@ message body must contain the JSON email address list.
 			}
 			defer file.Close()
 		}
-		filterctld := InitAPI()
+		filterctl := NewFilterctlClient()
 		decoder := json.NewDecoder(file)
 		users := []string{}
 		err = decoder.Decode(&users)
@@ -71,7 +71,7 @@ message body must contain the JSON email address list.
 			var response APIPasswordResponse
 			path := fmt.Sprintf("/filterctl/passwd/%s/", user)
 			viper.Set("sender", user)
-			_, err := filterctld.Get(path, &response)
+			_, err := filterctl.Get(path, &response)
 			cobra.CheckErr(err)
 			table.Accounts[response.User] = response.Password
 		}
@@ -82,6 +82,5 @@ message body must contain the JSON email address list.
 }
 
 func init() {
-	accountsCmd.Flags().BoolVar(&noRemove, "no-remove", false, "disable deletion of input file")
 	rootCmd.AddCommand(accountsCmd)
 }

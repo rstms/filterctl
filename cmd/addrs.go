@@ -39,10 +39,10 @@ Return the list of addresses contained by an address book
 	Run: func(cmd *cobra.Command, args []string) {
 		username := viper.GetString("sender")
 		bookname := args[0]
-		filterctld := InitAPI()
+		filterctl := NewFilterctlClient()
 		var response APIAddressesResponse
 		path := fmt.Sprintf("/filterctl/addresses/%s/%s/", username, bookname)
-		ret, err := filterctld.Get(path, &response)
+		ret, err := filterctl.Get(path, &response)
 		cobra.CheckErr(err)
 		fmt.Printf(ret)
 	},

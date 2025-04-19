@@ -22,17 +22,18 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"io"
+	"os"
 )
 
 // rescanCmd represents the scan command
 var rescanCmd = &cobra.Command{
-	Use:   "scan MESSAGE_FILE",
+	Use:   "rescan MESSAGE_FILE",
 	Short: "rescan messages with rspamd",
 	Long: `
 Read folder name or message_ids from MESSAGE_FILE, and rescan designated
@@ -40,13 +41,27 @@ messages rspamd, address-books, spam-classes, rewriting message headers.
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		filterctld := InitAPI()
+		viper.SetDefault("rescand_url", "https://127.0.0.1:2017")
+		rescan, err := NewAPIClient("rescand_url")
+		cobra.CheckErr(err)
 
-		data, err := os.ReadFile(args[0])
-		if err != nil {
-			cobra.CheckErr(fmt.Errorf("failed reading message selection file: %v", err))
+		var data []byte
+		filename := args[0]
+		if filename == "" || filename == "-" {
+			var buf bytes.Buffer
+			_, err := io.Copy(&buf, os.Stdin)
+			cobra.CheckErr(err)
+			data = buf.Bytes()
+		} else {
+			data, err = os.ReadFile(filename)
+			if err != nil {
+				cobra.CheckErr(fmt.Errorf("failed reading message selection file: %v", err))
+			}
+			if !viper.GetBool("no_remove") {
+				err = os.Remove(filename)
+				cobra.CheckErr(err)
+			}
 		}
-
 		var request APIRescanRequest
 		err = json.Unmarshal(data, &request)
 		if err != nil {
@@ -55,12 +70,12 @@ messages rspamd, address-books, spam-classes, rewriting message headers.
 		request.Username = viper.GetString("sender")
 
 		var response APIResponse
-		text, err := filterctld.Post("/filterctl/rescan/", &request, &response)
+		text, err := rescan.Post("/rescan/", &request, &response)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(scanCmd)
+	rootCmd.AddCommand(rescanCmd)
 }

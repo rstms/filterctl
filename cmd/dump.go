@@ -36,10 +36,10 @@ Return the sender's password, address books and the list of addresses for
 each address book.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := InitAPI()
+		filterctl := NewFilterctlClient()
 		var data APIDumpResponse
 		path := fmt.Sprintf("/filterctl/dump/%s/", viper.GetString("sender"))
-		text, err := api.Get(path, &data)
+		text, err := filterctl.Get(path, &data)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},

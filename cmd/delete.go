@@ -36,18 +36,18 @@ for the sender address are deleted.  Optionally, one or more CLASS names may
 be provided to delete specific classes from the configuration.
 `,
 	Run: func(cmd *cobra.Command, args []string) {
-		api := InitAPI()
+		filterctl := NewFilterctlClient()
 		var response string
 		var data APIResponse
 		if len(args) == 0 {
 			path := fmt.Sprintf("/filterctl/classes/%s/", viper.GetString("sender"))
-			r, err := api.Delete(path, &data)
+			r, err := filterctl.Delete(path, &data)
 			cobra.CheckErr(err)
 			response = r
 		} else {
 			for _, class := range args {
 				path := fmt.Sprintf("/filterctl/classes/%s/%s/", viper.GetString("sender"), class)
-				r, err := api.Delete(path, &data)
+				r, err := filterctl.Delete(path, &data)
 				cobra.CheckErr(err)
 				response = r
 			}

@@ -149,6 +149,9 @@ func init() {
 
 	rootCmd.PersistentFlags().String("message-id", "", "base64-encoded message ID")
 	viper.BindPFlag("message_id", rootCmd.PersistentFlags().Lookup("message-id"))
+
+	rootCmd.PersistentFlags().Bool("no-remove", false, "disable deletion of input file")
+	viper.BindPFlag("no_remove", rootCmd.PersistentFlags().Lookup("no-remove"))
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -383,8 +386,8 @@ func run(cmd *exec.Cmd) (int, []byte, []byte, error) {
 	return exitCode, oBuf.Bytes(), eBuf.Bytes(), nil
 }
 
-func InitAPI() *APIClient {
-	api, err := NewAPIClient()
+func NewFilterctlClient() *APIClient {
+	api, err := NewAPIClient(viper.GetString("server_url"))
 	cobra.CheckErr(err)
 	if viper.GetString("sender") == "" {
 		cobra.CheckErr(errors.New("missing sender"))

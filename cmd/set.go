@@ -40,7 +40,7 @@ THRESHOLD is a floating point number.
 `,
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		api := InitAPI()
+		filterctl := NewFilterctlClient()
 		var response APIResponse
 		class := args[0]
 		matches := CLASS_PATTERN.FindStringSubmatch(class)
@@ -55,7 +55,7 @@ THRESHOLD is a floating point number.
 			cobra.CheckErr(fmt.Errorf("invalid threshold value in class specifier '%s' ", class))
 		}
 
-		text, err := api.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s/", viper.GetString("sender"), name, threshold), &response)
+		text, err := filterctl.Put(fmt.Sprintf("/filterctl/classes/%s/%s/%s/", viper.GetString("sender"), name, threshold), &response)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},

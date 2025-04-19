@@ -43,8 +43,8 @@ DESCRIPTION.  Returns a data structure including the new book token and URI
 		if len(args) > 1 {
 			description = args[1]
 		}
-		api := InitAPI()
-		text, err := AddAddressBook(api, viper.GetString("sender"), bookName, description)
+		filterctl := NewFilterctlClient()
+		text, err := AddAddressBook(filterctl, viper.GetString("sender"), bookName, description)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
@@ -54,7 +54,7 @@ func init() {
 	rootCmd.AddCommand(mkbookCmd)
 }
 
-func AddAddressBook(api *APIClient, username, bookname, description string) (string, error) {
+func AddAddressBook(filterctl *APIClient, username, bookname, description string) (string, error) {
 	type Request struct {
 		Username    string
 		Bookname    string
@@ -66,7 +66,7 @@ func AddAddressBook(api *APIClient, username, bookname, description string) (str
 		Description: description,
 	}
 	var response APIResponse
-	result, err := api.Post("/filterctl/book/", &request, &response)
+	result, err := filterctl.Post("/filterctl/book/", &request, &response)
 	if err != nil {
 		return "", err
 	}

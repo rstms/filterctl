@@ -39,10 +39,10 @@ Delete an email address from the named address book.
 		username := viper.GetString("sender")
 		bookname := args[0]
 		address := args[1]
-		filterctld := InitAPI()
+		filterctl := NewFilterctlClient()
 		var response APIResponse
 		path := fmt.Sprintf("/filterctl/address/%s/%s/%s/", username, bookname, address)
-		text, err := filterctld.Delete(path, &response)
+		text, err := filterctl.Delete(path, &response)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
