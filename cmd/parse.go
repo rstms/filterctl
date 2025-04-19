@@ -25,6 +25,7 @@ import (
 	//"bufio"
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/emersion/go-message/mail"
 	"github.com/spf13/cobra"
@@ -135,6 +136,18 @@ func handleForwardedMessage(m *mail.Reader, sender, suffix, messageID string) er
 	return ExecuteCommand(sender, messageID, args)
 }
 
+func commandHasBodyData(command string) bool {
+	switch command {
+	case "accounts":
+		return true
+	case "rescan":
+		return true
+	case "restore":
+		return true
+	}
+	return false
+}
+
 func handleCommandMessage(m *mail.Reader, sender, messageID string) error {
 	subject, err := m.Header.Subject()
 	cobra.CheckErr(err)
@@ -144,12 +157,10 @@ func handleCommandMessage(m *mail.Reader, sender, messageID string) error {
 	}
 
 	if len(fields) > 0 {
-		if fields[0] == "restore" || fields[0] == "accounts" || fields[0] == "rescan" {
-			filename, err := parseRestoreBody(m)
-			if err != nil {
-				return err
-			}
-			fields = []string{fields[0], filename}
+		command := fields[0]
+		if commandHasBodyData(command) {
+			filename := parseJSONBody(m, command)
+			fields = append(fields, filename)
 		}
 	}
 	return ExecuteCommand(sender, messageID, fields)
@@ -330,12 +341,12 @@ func parseForwardedBody(m *mail.Reader, suffix string) string {
 			contentType, _, _ := strings.Cut(value, ";")
 			switch contentType {
 			case "text/plain":
-				from := scanTextBody(p.Body)
+				from := scanForwardedTextBody(p.Body)
 				if from != "" {
 					return from
 				}
 			case "text/html":
-				from := scanHTMLBody(p.Body)
+				from := scanForwardedHTMLBody(p.Body)
 				if from != "" {
 					return from
 				}
@@ -351,72 +362,67 @@ func parseForwardedBody(m *mail.Reader, suffix string) string {
 	return ""
 }
 
-func bodyFile(body string) (string, error) {
-	tmpFile, err := ioutil.TempFile(os.TempDir(), "filterctl-body-*")
-	defer tmpFile.Close()
-	if err != nil {
-		return "", err
+func parseJSONBody(m *mail.Reader, command string) string {
+	if viper.GetBool("verbose") {
+		log.Printf("parsing JSON body")
 	}
-	_, err = tmpFile.Write([]byte(body))
-	if err != nil {
-		return "", err
-	}
-	return filepath.Abs(tmpFile.Name())
-}
-
-func parseRestoreBody(m *mail.Reader) (string, error) {
 	for {
 		p, err := m.NextPart()
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			return "", fmt.Errorf("failure parsing refresh body: %v", err)
+			log.Fatalf("failure reading mesage body: %v", err)
 		}
-		//log.Printf("PART: %+v\n", p)
+		if viper.GetBool("verbose") {
+			log.Printf("PART: %+v\n", p)
+		}
 		switch h := p.Header.(type) {
 		case *mail.InlineHeader:
 			value := h.Get("Content-Type")
-			contentType, _, _ := strings.Cut(value, ";")
-			if contentType != "" && contentType != "text/plain" {
-				log.Printf("Warning: unexpected Content-Type: %s\n", contentType)
+			if value != "" {
+				contentType, _, _ := strings.Cut(value, ";")
+				if contentType != "" && contentType != "text/plain" {
+					log.Printf("Warning: unexpected Content-Type: %s\n", contentType)
+				}
 			}
-
-			body, err := scanRestoreBody(p.Body)
-			if err != nil {
-				return "", err
-			}
-			filename, err := bodyFile(body)
-			if err != nil {
-				return "", fmt.Errorf("failure writing body file: %v", err)
-			}
-			return filename, nil
+			return scanJSONBodyToTempFile(p.Body)
 		default:
-			log.Printf("Warning: unexpected forwarded body part header: %v\n", h)
+			log.Printf("Warning: unexpected body part header: %v\n", h)
 
 		}
 	}
-	return "", fmt.Errorf("failed to read restore body")
+	log.Fatalf("failed parsing JSON body")
+	return ""
 }
 
-func scanRestoreBody(body io.Reader) (string, error) {
-	scanner := bufio.NewScanner(body)
-	count := 0
-	buf := bytes.Buffer{}
-	for scanner.Scan() {
-		line := scanner.Text()
-		if viper.GetBool("verbose") {
-			log.Printf("restore[%d]: %s\n", count, line)
-			_, err := buf.WriteString(line + "\n")
-			if err != nil {
-				log.Fatalf("failed writing to buffer: %v", err)
-			}
-		}
-		count += 1
+func scanJSONBodyToTempFile(body io.Reader) string {
+	var decoded interface{}
+	decoder := json.NewDecoder(body)
+	err := decoder.Decode(&decoded)
+	if err != nil {
+		log.Fatalf("failed decoding message body as JSON: %v", err)
 	}
-	return buf.String(), nil
+	formatted, err := json.MarshalIndent(decoded, "", "  ")
+	if err != nil {
+		log.Fatalf("failed reformatting JSON body data: %v", err)
+	}
+	tmpFile, err := ioutil.TempFile(os.TempDir(), "filterctl-body-*")
+	defer tmpFile.Close()
+	if err != nil {
+		log.Fatalf("failed creating temp file for JSON body data: %v", err)
+	}
+	_, err = tmpFile.Write(formatted)
+	if err != nil {
+		log.Fatalf("failed writing JSON body data to temp file: %v", err)
+	}
+	filename, err := filepath.Abs(tmpFile.Name())
+	if err != nil {
+		log.Fatalf("failed converting temp file to absolute pathname: %v", err)
+	}
+	return filename
 }
 
-func scanTextBody(body io.Reader) string {
+func scanForwardedTextBody(body io.Reader) string {
 	scanner := bufio.NewScanner(body)
 	count := 0
 	marker := false
@@ -462,7 +468,7 @@ func scanTextBody(body io.Reader) string {
 	return ""
 }
 
-func scanHTMLBody(body io.Reader) string {
+func scanForwardedHTMLBody(body io.Reader) string {
 	scanner := bufio.NewScanner(body)
 	count := 0
 	marker := false
