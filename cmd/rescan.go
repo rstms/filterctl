@@ -42,7 +42,8 @@ messages rspamd, address-books, spam-classes, rewriting message headers.
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		viper.SetDefault("rescand_url", "https://127.0.0.1:2017")
-		rescan, err := NewAPIClient("rescand_url")
+		url := viper.GetString("rescand_url")
+		rescan, err := NewAPIClient(url)
 		cobra.CheckErr(err)
 
 		var data []byte

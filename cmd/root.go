@@ -184,6 +184,11 @@ func initConfig() {
 	// If a config file is found, read it in.
 	err := viper.ReadInConfig()
 	cobra.CheckErr(err)
+
+	file := viper.ConfigFileUsed()
+	if file != "" && viper.GetBool("verbose") {
+		log.Printf("Configured from file: %v\n", file)
+	}
 }
 
 func InitIdentity() error {
@@ -387,7 +392,8 @@ func run(cmd *exec.Cmd) (int, []byte, []byte, error) {
 }
 
 func NewFilterctlClient() *APIClient {
-	api, err := NewAPIClient(viper.GetString("server_url"))
+	url := viper.GetString("server_url")
+	api, err := NewAPIClient(url)
 	cobra.CheckErr(err)
 	if viper.GetString("sender") == "" {
 		cobra.CheckErr(errors.New("missing sender"))

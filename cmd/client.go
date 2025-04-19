@@ -115,7 +115,7 @@ func GetViperPath(key string) (string, error) {
 
 }
 
-func NewAPIClient(urlKey string) (*APIClient, error) {
+func NewAPIClient(url string) (*APIClient, error) {
 
 	certFile, err := GetViperPath("cert")
 	if err != nil {
@@ -131,7 +131,7 @@ func NewAPIClient(urlKey string) (*APIClient, error) {
 	}
 
 	api := APIClient{
-		URL: viper.GetString(urlKey),
+		URL: url,
 	}
 
 	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
