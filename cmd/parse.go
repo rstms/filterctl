@@ -402,7 +402,7 @@ func scanJSONBodyToTempFile(body io.Reader) string {
 	}
 	if viper.GetBool("verbose") {
 		for i, line := range strings.Split(string(data), "\n") {
-			log.Printf("BODY[%n] %s\n", i, line)
+			log.Printf("BODY[%d] %s\n", i, line)
 		}
 	}
 	var decoded interface{}
