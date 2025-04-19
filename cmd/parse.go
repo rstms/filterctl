@@ -396,9 +396,17 @@ func parseJSONBody(m *mail.Reader, command string) string {
 }
 
 func scanJSONBodyToTempFile(body io.Reader) string {
+	data, err := io.ReadAll(body)
+	if err != nil {
+		log.Fatalf("failed reading message body: %v", err)
+	}
+	if viper.GetBool("verbose") {
+		for i, line := range strings.Split(string(data), "\n") {
+			log.Printf("BODY[%n] %s\n", i, line)
+		}
+	}
 	var decoded interface{}
-	decoder := json.NewDecoder(body)
-	err := decoder.Decode(&decoded)
+	err = json.Unmarshal(data, &decoded)
 	if err != nil {
 		log.Fatalf("failed decoding message body as JSON: %v", err)
 	}
