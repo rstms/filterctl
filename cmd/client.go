@@ -99,6 +99,26 @@ type APIRescanRequest struct {
 	MessageIds []string
 }
 
+type APIRescanStatus struct {
+	Id           string
+	Running      bool
+	Total        int
+	Completed    int
+	SuccessCount int
+	FailCount    int
+	LatestFile   string
+}
+
+type APIRescanResponse struct {
+	APIResponse
+	Status APIRescanStatus
+}
+
+type APIRescanStatusResponse struct {
+	APIResponse
+	Status map[string]APIRescanStatus
+}
+
 func GetViperPath(key string) (string, error) {
 	path := viper.GetString(key)
 	if len(path) < 2 {
@@ -258,6 +278,18 @@ func (a *APIClient) request(method, path string, requestData, responseData inter
 	case *APIPasswordResponse:
 		var data *APIPasswordResponse
 		data = responseData.(*APIPasswordResponse)
+		data.Request = messageID
+		data.User = username
+		text, err = json.MarshalIndent(&data, "", "  ")
+	case *APIRescanResponse:
+		var data *APIRescanResponse
+		data = responseData.(*APIRescanResponse)
+		data.Request = messageID
+		data.User = username
+		text, err = json.MarshalIndent(&data, "", "  ")
+	case *APIRescanStatusResponse:
+		var data *APIRescanStatusResponse
+		data = responseData.(*APIRescanStatusResponse)
 		data.Request = messageID
 		data.User = username
 		text, err = json.MarshalIndent(&data, "", "  ")

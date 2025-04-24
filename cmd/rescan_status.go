@@ -22,62 +22,38 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"io"
-	"os"
 )
 
-// rescanCmd represents the scan command
-var rescanCmd = &cobra.Command{
-	Use:   "rescan MESSAGE_FILE",
-	Short: "rescan messages with rspamd",
+var rescanStatusCmd = &cobra.Command{
+	Use:   "rescanstatus [ID]",
+	Short: "request rescan job status",
 	Long: `
-Read folder name and message ids from MESSAGE_FILE, and rescan designated
-messages with rspamd, address-books, spam-classes, rewriting message headers.
+Return status of active rescan jobs.  If ID is specified, request status of
+a single rescan job, otherwise request status of all active jobs.
 `,
-	Args: cobra.ExactArgs(1),
+	Args: cobra.RangeArgs(0, 1),
 	Run: func(cmd *cobra.Command, args []string) {
 		viper.SetDefault("rescand_url", "https://127.0.0.1:2017")
 		url := viper.GetString("rescand_url")
 		rescan, err := NewAPIClient(url)
 		cobra.CheckErr(err)
 
-		var data []byte
-		filename := args[0]
-		if filename == "" || filename == "-" {
-			var buf bytes.Buffer
-			_, err := io.Copy(&buf, os.Stdin)
-			cobra.CheckErr(err)
-			data = buf.Bytes()
+		var text string
+		if len(args) == 0 {
+			var response APIRescanStatusResponse
+			text, err = rescan.Get("/rescan/", &response)
 		} else {
-			data, err = os.ReadFile(filename)
-			if err != nil {
-				cobra.CheckErr(fmt.Errorf("failed reading message selection file: %v", err))
-			}
-			if !viper.GetBool("no_remove") {
-				err = os.Remove(filename)
-				cobra.CheckErr(err)
-			}
+			var response APIRescanResponse
+			text, err = rescan.Get(fmt.Sprintf("/rescan/%s/", args[0]), &response)
 		}
-
-		var request APIRescanRequest
-		err = json.Unmarshal(data, &request)
-		if err != nil {
-			cobra.CheckErr(fmt.Errorf("failed decoding message selection file: %v", err))
-		}
-		request.Username = viper.GetString("sender")
-
-		var response APIRescanResponse
-		text, err := rescan.Post("/rescan/", &request, &response)
 		cobra.CheckErr(err)
 		fmt.Println(text)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(rescanCmd)
+	rootCmd.AddCommand(rescanStatusCmd)
 }
