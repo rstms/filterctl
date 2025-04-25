@@ -107,14 +107,10 @@ type APIRescanStatus struct {
 	SuccessCount int
 	FailCount    int
 	LatestFile   string
+	Request      APIRescanRequest
 }
 
 type APIRescanResponse struct {
-	APIResponse
-	Status APIRescanStatus
-}
-
-type APIRescanStatusResponse struct {
 	APIResponse
 	Status map[string]APIRescanStatus
 }
@@ -284,12 +280,6 @@ func (a *APIClient) request(method, path string, requestData, responseData inter
 	case *APIRescanResponse:
 		var data *APIRescanResponse
 		data = responseData.(*APIRescanResponse)
-		data.Request = messageID
-		data.User = username
-		text, err = json.MarshalIndent(&data, "", "  ")
-	case *APIRescanStatusResponse:
-		var data *APIRescanStatusResponse
-		data = responseData.(*APIRescanStatusResponse)
 		data.Request = messageID
 		data.User = username
 		text, err = json.MarshalIndent(&data, "", "  ")

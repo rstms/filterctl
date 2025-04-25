@@ -42,11 +42,10 @@ a single rescan job, otherwise request status of all active jobs.
 		cobra.CheckErr(err)
 
 		var text string
+		var response APIRescanResponse
 		if len(args) == 0 {
-			var response APIRescanStatusResponse
 			text, err = rescan.Get("/rescan/", &response)
 		} else {
-			var response APIRescanResponse
 			text, err = rescan.Get(fmt.Sprintf("/rescan/%s/", args[0]), &response)
 		}
 		cobra.CheckErr(err)
