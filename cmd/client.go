@@ -100,9 +100,9 @@ type APIRescanRequest struct {
 }
 
 type APIRescanError struct {
-	MessageId string
-	Pathname  string
-	Message   string
+	Pathname string
+	Message  string
+	Headers  map[string]string
 }
 
 type APIRescanStatus struct {
