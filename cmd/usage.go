@@ -61,29 +61,17 @@ Subject line of an email to filterctl@emaildomain.ext.
 			{"passwd", "", passwdCmd.Long},
 			{"dump", "", dumpCmd.Long},
 			{"restore", "", restoreCmd.Long},
+			{"rescan", "", rescanCmd.Long},
+			{"rescanstatus", "", rescanStatusCmd.Long},
 			{"version", "", versionCmd.Long},
 			{"usage", "", "\nOutput this message\n"},
 		}
 
 		help := `### Mail Filter Control ####
-# Filter Control Address #
-The email address 'filterctl@[account_domain]' accepts messages only from
-internal users connecting on a TLS-secured authorized connection.  Messages
-may be sent to this address to examine or modify the configuration of several
-filter mechanisms. 
-
-In this document [account_domain] represents the full domain name for any 
-email account. The filter control address for a user with the email address 
-'mailuser@mailserver.com' would be 'filterctl@mailserver.com'
-
-Each email user may customize parameters and settings used for their account
-with this email-based command interface.  Commands are executed by sending a
-message to 'filterctl@[account_domain]' with the command and any arguments as
-the 'Subject' line.  The message body is usually ignored.  (see below for an
-exception to this rule)  When the command is executed by the mailserver a
-response message is sent from 'filterctl@[account_domain]' with the subject
-'filterctl response'.  The body of the response message contains output from
-the command.
+# General Overview #
+The mail-filter-control-extension provides user control for the mail filter
+features implemented on your mail system.  Read the following sections for
+a description of the various control features.
 
 # X-Spam-Score Header # 
 The rspamd classifier on the mailserver adds an 'X-Spam-Score' header to each
@@ -119,17 +107,25 @@ part of the username preceeding the '+' character.  For example, mail sent to
 'user@[account_domain]'.  Plus-extension aliasing requires no configuration
 and is useful in coordination with client filtering rules.
 
-# Address Book Filter Forwarding #
-A mechanism exists for automatically adding the sender of a mail message to an
-address book filter by forwarding the message to the filterctl address using a
-'plus-suffix' to specify the desired book name.  To add the 'From' address of
-an email in one of your mail folders to an address book filter, forward the
-email to 'filterctl+[book_name]@[account_domain]'.  The filterctl command
-processor will first extract the From address from the forwarded message.  The
-address book name is then taken from the suffix part of the address.  If the
-book does not exist it is created.  Finally, the forwarded message's From
-address is added to the address book.  Thereafter, all incoming mail from that
-sender will be annotated with the corresponding 'X-Address-Book' header.
+# Filter Control Address Implementation Details #
+The email address 'filterctl@[account_domain]' accepts messages only from
+internal users connecting on a TLS-secured authorized connection.  Messages
+may be sent to this address to examine or modify the configuration of several
+filter mechanisms. 
+
+In this document [account_domain] represents the full domain name for any 
+email account. The filter control address for a user with the email address 
+'mailuser@mailserver.com' would be 'filterctl@mailserver.com'
+
+Each email user may customize parameters and settings used for their account
+with this email-based command interface.  Commands are executed by sending a
+message to 'filterctl@[account_domain]' with the command and any arguments as
+the 'Subject' line.  The message body optionally contains input to the command
+formatted as JSON in a plain-text message body.  When the command is executed
+by the mailserver a response message is sent from 'filterctl@[account_domain]'
+with the subject 'filterctl response'.  The body of this response message
+contains the command output.  By default, the system automatically deletes
+these control messages from the Inbox and Sent folders.
 `
 
 		usage := "# filterctl subject line commands #\n"
