@@ -40,9 +40,9 @@ import (
 	"strings"
 )
 
-var RECEIVED_PATTERN = regexp.MustCompile(`^from .* by ([a-z][a-z\.]*) \(OpenSMTPD\) with ESMTPSA .* auth=yes user=([a-z][a-z_-]*) for <filterctl\+*([^@]*)@([^>]+)>.*$`)
+var RECEIVED_PATTERN = regexp.MustCompile(`^from .* by ([a-zA-Z0-9][a-zA-Z0-9\.-]*) \(OpenSMTPD\) with ESMTPSA .* auth=yes user=([a-zA-Z][a-zA-Z0-9_\.]*) for <filterctl\+*([^@]*)@([^>]+)>.*$`)
 
-var DKIM_DOMAIN_PATTERN = regexp.MustCompile(`d=([a-z\.]*)$`)
+var DKIM_DOMAIN_PATTERN = regexp.MustCompile(`d=([a-zA-Z0-9\.-]*)$`)
 var FORWARDED_PATTERN = regexp.MustCompile(`.*----- Forwarded Message -----.*`)
 
 var MOZ_HEADERS_TABLE_BEGIN_PATTERN = regexp.MustCompile(`class="moz-email-headers-table"`)
