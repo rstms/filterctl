@@ -33,7 +33,6 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -73,17 +72,7 @@ Command actions issue API requests to filterctld running at http://localhost:201
 
 `,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		filename := viper.GetString("log_file")
-		if filename == "stderr" {
-			log.SetOutput(os.Stderr)
-		} else {
-			file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
-			cobra.CheckErr(err)
-			logFile = file
-			log.SetOutput(logFile)
-		}
-		log.SetPrefix(fmt.Sprintf("[%d] ", os.Getpid()))
-		log.SetFlags(log.Ldate | log.Ltime | log.Lmsgprefix)
+
 		err := InitIdentity()
 		cobra.CheckErr(err)
 	},
@@ -185,6 +174,18 @@ func initConfig() {
 	err := viper.ReadInConfig()
 	cobra.CheckErr(err)
 
+	filename := viper.GetString("log_file")
+	if filename == "stderr" || filename == "-" {
+		log.SetOutput(os.Stderr)
+	} else {
+		file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
+		cobra.CheckErr(err)
+		logFile = file
+		log.SetOutput(logFile)
+	}
+	log.SetPrefix(fmt.Sprintf("[%d] ", os.Getpid()))
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmsgprefix)
+
 	file := viper.ConfigFileUsed()
 	if file != "" && viper.GetBool("verbose") {
 		log.Printf("Configured from file: %v\n", file)
@@ -195,42 +196,56 @@ func InitIdentity() error {
 	verbose := viper.GetBool("verbose")
 	Hostname = viper.GetString("hostname")
 	Domains = viper.GetStringSlice("domains")
+	if verbose {
+		log.Printf("viper hostname: %s\n", Hostname)
+		log.Printf("viper domains: %v\n", Domains)
+	}
 	if Hostname == "" {
 		hostname, err := os.Hostname()
 		if err != nil {
 			return err
 		}
+		if verbose {
+			log.Printf("autoconfig hostname=%v\n", hostname)
+		}
 		addrs, err := net.LookupHost(hostname)
 		if err != nil {
 			return err
 		}
-		pattern, err := regexp.Compile(`^([a-z][a-z]*)\.([a-z\.]*)\.$`)
-		if err != nil {
-			return err
+		if verbose {
+			log.Printf("autoconfig addrs=%v\n", addrs)
 		}
 		for _, addr := range addrs {
 			names, err := net.LookupAddr(addr)
 			if err != nil {
 				return err
 			}
-			if len(names) != 1 {
-				return errors.New(fmt.Sprintf("unexpected multiple names returned for %s", addr))
-			}
-			matches := pattern.FindStringSubmatch(names[0])
-			if len(matches) != 3 {
-				return errors.New(fmt.Sprintf("unexpected domain format: %s", names[0]))
-			}
-			host := matches[1]
-			domain := matches[2]
 			if verbose {
-				log.Printf("addr=%s hostname=%s host=%s domain=%s\n", addr, hostname, host, domain)
+				log.Printf("autoconfig names=%v\n", names)
 			}
-			if Hostname == "" {
-				Hostname = host + "." + domain
+			for _, name := range names {
+				parts := strings.Split(name, ".")
+				log.Printf("autoconfig name=%v parts=%v\n", name, parts)
+				if len(parts) < 4 || parts[len(parts)-1] != "" {
+					return errors.New(fmt.Sprintf("unexpected domain format: for %s: %v", addr, parts))
+				}
+				host := parts[0]
+				domain := strings.Join(parts[1:len(parts)-1], ".")
+				if verbose {
+					log.Printf("addr=%s hostname=%s host=%s domain=%s\n", addr, hostname, host, domain)
+				}
+				if Hostname == "" {
+					Hostname = host + "." + domain
+				}
+				Domains = append(Domains, domain)
 			}
-			Domains = append(Domains, domain)
 		}
 	}
+	if verbose {
+		log.Printf("Hostname: %s\n", Hostname)
+		log.Printf("Domains: %v\n", Domains)
+	}
+
 	if Hostname == "" {
 		return errors.New("failed to set Hostname")
 	}
