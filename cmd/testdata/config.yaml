@@ -5,8 +5,7 @@ domains:
 server_url: http://127.0.0.1:2016
 verbose: true
 debug: true
-log_file: stderr
 cert: ~/ssl/filterctl.pem
 key: ~/ssl/filterctl.key
-#log_file: testdata/filterctl.log
+log_file: stderr
 insecure_disable_username_check: true
