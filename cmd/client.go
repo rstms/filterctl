@@ -99,7 +99,7 @@ type APIRescanRequest struct {
 	MessageIds []string
 }
 
-type APIRescanError struct {
+type APIRescanResult struct {
 	Pathname string
 	Message  string
 	Headers  map[string]string
@@ -114,7 +114,8 @@ type APIRescanStatus struct {
 	FailCount    int
 	LatestFile   string
 	Request      APIRescanRequest
-	Errors       []APIRescanError
+	Errors       []APIRescanResult
+	Actions      []APIRescanResult
 }
 
 type APIRescanResponse struct {
