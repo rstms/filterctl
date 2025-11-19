@@ -427,6 +427,6 @@ func NewFilterctlClient() *APIClient {
 }
 
 func PrintVersion() {
-	fmt.Printf("filterctl %s\n", Version)
+	fmt.Printf("filterctl version %s\n", Version)
 	os.Exit(0)
 }
