@@ -118,6 +118,9 @@ func init() {
 	rootCmd.PersistentFlags().Bool("insecure-disable-username-check", false, "disable failure if username not valid")
 	viper.BindPFlag("insecure_disable_username_check", rootCmd.PersistentFlags().Lookup("insecure-disable-username-check"))
 
+	rootCmd.PersistentFlags().BoolP("version", "", false, "output program name and version")
+	viper.BindPFlag("version", rootCmd.PersistentFlags().Lookup("version"))
+
 	rootCmd.PersistentFlags().BoolP("verbose", "v", false, "enable diagnostic output")
 	viper.BindPFlag("verbose", rootCmd.PersistentFlags().Lookup("verbose"))
 
@@ -145,6 +148,13 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
+
+	versionFlag, err := rootCmd.PersistentFlags().GetBool("version")
+	cobra.CheckErr(err)
+	if versionFlag {
+		PrintVersion()
+	}
+
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
@@ -160,7 +170,7 @@ func initConfig() {
 		// Search config in home directory with name ".filterctl" (without extension).
 		viper.AddConfigPath(home)
 		viper.AddConfigPath(userConfigPath)
-		viper.AddConfigPath(".")
+		//viper.AddConfigPath(".")
 		viper.SetConfigType("yaml")
 		viper.SetConfigName("filterctl")
 	}
@@ -171,7 +181,7 @@ func initConfig() {
 	viper.SetDefault("message_id", EncodedMessageID("filter_control_message"))
 
 	// If a config file is found, read it in.
-	err := viper.ReadInConfig()
+	err = viper.ReadInConfig()
 	cobra.CheckErr(err)
 
 	filename := viper.GetString("log_file")
@@ -414,4 +424,9 @@ func NewFilterctlClient() *APIClient {
 		cobra.CheckErr(errors.New("missing sender"))
 	}
 	return api
+}
+
+func PrintVersion() {
+	fmt.Printf("filterctl %s\n", Version)
+	os.Exit(0)
 }
