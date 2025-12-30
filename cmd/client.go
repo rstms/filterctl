@@ -221,6 +221,7 @@ func (a *APIClient) request(method, path string, requestData, responseData inter
 	if err != nil {
 		return "", fmt.Errorf("failed creating %s request: %v", method, err)
 	}
+	request.Header.Add("X-Api-Key", viper.GetString("api_key"))
 	response, err := a.Client.Do(request)
 	if err != nil {
 		return "", fmt.Errorf("request failed: %v", err)
